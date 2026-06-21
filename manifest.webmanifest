@@ -1,7 +1,7 @@
 {
-  "name": "Lila — your healthy habit buddy",
+  "name": "Lila — Twoja kumpela od zdrowych nawyków",
   "short_name": "Lila",
-  "description": "Build gentle healthy habits with Lila, your cozy companion.",
+  "description": "Buduj zdrowe nawyki z Lilą, Twoją przytulną towarzyszką.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

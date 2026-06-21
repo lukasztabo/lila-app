@@ -1,4 +1,4 @@
-const CACHE = 'lila-v3';
+const CACHE = 'lila-v4';
 const ASSETS = [
   './', './index.html', './css/styles.css', './js/app.js', './manifest.webmanifest',
   './assets/lila/hero.png', './assets/lila/celebrate.png', './assets/lila/sleep.png', './assets/lila/world.png',
