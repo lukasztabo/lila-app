@@ -196,3 +196,54 @@ img{display:block;-webkit-user-drag:none;user-select:none}
 .walkbtn{margin:16px 16px 2px;width:calc(100% - 32px);padding:14px;border-radius:var(--r-md);background:#43B68C;color:#fff;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:var(--shadow)}
 .walkbtn svg{width:18px;height:18px}
 .walkbtn span{opacity:.92}
+.walkbtn[disabled]{cursor:default}
+
+/* hearts chip + bond + care */
+.chip.heart{background:#FCE7EF;color:#D9608A}
+.speech{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:#fff;color:var(--pink-deep);font-weight:800;font-size:12px;padding:7px 13px;border-radius:14px;box-shadow:0 3px 10px rgba(180,130,150,.18);z-index:3;max-width:80%;text-align:center}
+.speech:after{content:"";position:absolute;bottom:-5px;left:50%;transform:translateX(-50%) rotate(45deg);width:10px;height:10px;background:#fff}
+.lila-stage{cursor:pointer}
+.bondrow{display:flex;align-items:center;gap:8px;margin-top:8px;color:var(--pink-deep)}
+.bondrow>svg{width:16px;height:16px;flex-shrink:0}
+.bondrow span{font-size:12px;font-weight:800;color:var(--pink-deep)}
+.bondbar{flex:1;height:9px;background:#fff;border-radius:6px;overflow:hidden}
+.bondbar>i{display:block;height:100%;background:linear-gradient(90deg,#F6A8C4,#E2607F);border-radius:6px;transition:width .5s}
+.pethint{text-align:center;font-size:11px;color:var(--ink-faint);font-weight:700;margin-top:8px}
+
+/* new place card */
+.newplace{display:flex;align-items:center;gap:12px;margin:14px 16px 4px;background:#fff;border:1.5px dashed var(--lav);border-radius:var(--r-md);padding:13px 15px;box-shadow:var(--shadow);cursor:pointer}
+.newplace.done{border-style:solid;border-color:var(--line)}
+.np-ic{width:42px;height:42px;border-radius:13px;background:var(--lav-bg);color:var(--lav-deep);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.np-ic svg{width:22px;height:22px}
+.np-tx{flex:1}.np-tx b{font-weight:800;font-size:15px;display:block}.np-tx small{font-size:12px;color:var(--ink-soft);font-weight:700}
+.np-cost{display:flex;align-items:center;gap:3px;font-weight:800;color:var(--pink-deep)}
+.np-cost svg{width:16px;height:16px}
+
+/* collection progress bars */
+.setbar,.colrow{display:flex;align-items:center;gap:10px;margin:6px 18px;font-weight:800;font-size:13px;color:var(--ink-soft)}
+.setbar span,.colrow span{min-width:96px}
+.colrow{margin:8px 16px}
+.sb{flex:1;height:8px;background:#EFE5DE;border-radius:5px;overflow:hidden}
+.sb>i{display:block;height:100%;background:linear-gradient(90deg,var(--lav),var(--pink));border-radius:5px}
+.setbar b,.colrow b{color:var(--pink-deep);min-width:30px;text-align:right}
+.cols{padding:2px 0 8px}
+
+/* memories */
+.memwrap{padding:0 16px;display:flex;flex-direction:column;gap:9px}
+.mem{display:flex;align-items:center;gap:11px;background:var(--card);border:1.5px solid var(--line);border-radius:var(--r-md);padding:10px 13px;box-shadow:var(--shadow)}
+.mem-ic{width:34px;height:34px;border-radius:11px;background:var(--pink-bg);color:var(--pink-deep);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mem-ic svg{width:18px;height:18px}
+.mem-tx{flex:1}.mem-tx b{font-weight:800;font-size:14px;display:block;line-height:1.3}.mem-tx small{font-size:11px;color:var(--ink-faint);font-weight:700}
+
+/* garden */
+.garden{display:flex;gap:10px;padding:2px 16px 4px}
+.plot{flex:1;background:var(--card);border:1.5px solid var(--line);border-radius:var(--r-md);padding:10px 6px;text-align:center;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:6px}
+.plot.empty{border-style:dashed;cursor:pointer}
+.soil{width:54px;height:54px;border-radius:50%;background:#F0E2D6;display:flex;align-items:center;justify-content:center;color:#B59A86}
+.soil svg{width:22px;height:22px}
+.soil.grown{background:#E5F2E9}
+.plot small{font-size:11px;font-weight:800;color:var(--ink-soft)}
+.pbtn{width:100%;padding:7px;border-radius:10px;font-weight:800;font-size:12px;background:var(--blue-bg,#E4F1FB);color:#2E78B8;display:flex;align-items:center;justify-content:center;gap:3px}
+.pbtn svg{width:13px;height:13px}
+.pbtn.wet{background:#EFE5DE;color:var(--ink-faint)}
+.pbtn.harvest{background:var(--mint-bg);color:var(--mint-deep)}
