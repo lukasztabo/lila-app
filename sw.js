@@ -1,7 +1,7 @@
-const CACHE = 'lila-v4';
+const CACHE = 'lila-v5';
 const ASSETS = [
   './', './index.html', './css/styles.css', './js/app.js', './manifest.webmanifest',
-  './assets/lila/hero.png', './assets/lila/celebrate.png', './assets/lila/sleep.png', './assets/lila/world.png',
+  './assets/lila/hero.png', './assets/lila/celebrate.png', './assets/lila/sleep.png', './assets/lila/world.png', './assets/lila/world_asleep.png',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png', './assets/icons/apple-touch-icon.png'
 ];
 

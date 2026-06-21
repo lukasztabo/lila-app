@@ -162,6 +162,20 @@ img{display:block;-webkit-user-drag:none;user-select:none}
 .worldwrap{padding:0 16px}
 .worldmap{position:relative;border-radius:var(--r-lg);box-shadow:var(--shadow);overflow:hidden}
 .worldmap img{width:100%;display:block}
+.worldmap .town-asleep{position:relative;z-index:0}
+.worldmap .town-awake{position:absolute;top:0;left:0;width:100%;height:auto;z-index:1;transition:opacity 1s ease}
+.worldmap .spot{z-index:2}
+
+/* Akt 1 — karta rozdziału */
+.chapter{margin-top:10px;background:var(--card);border:1.5px solid var(--line);border-radius:var(--r-md);padding:12px 14px;box-shadow:var(--shadow)}
+.ch-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.ch-top b{font-family:'Baloo 2',sans-serif;color:var(--pink-deep);font-size:15px}
+.ch-top span{font-weight:800;color:var(--lav-deep)}
+.chapter .wb{height:10px;background:#EFE5DE;border-radius:6px;overflow:hidden}
+.chapter .wb>i{display:block;height:100%;background:linear-gradient(90deg,#F6D27A,#F2A0BC);border-radius:6px;transition:width .8s}
+.ch-next{margin-top:9px;font-size:12.5px;color:var(--ink-soft);font-weight:700;line-height:1.55}
+.ch-next svg{width:15px;height:15px;color:var(--amber-deep);vertical-align:-3px;margin-right:4px}
+.ch-next b{color:var(--pink-deep)}
 .spot{position:absolute;border:none;background:transparent;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px}
 .spot span{background:rgba(255,255,255,.92);color:var(--pink-deep);font-weight:800;font-size:11px;padding:3px 10px;border-radius:11px;box-shadow:0 2px 7px rgba(160,120,140,.28)}
 .spot:active span{transform:scale(.95)}

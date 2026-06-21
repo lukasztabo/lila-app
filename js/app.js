@@ -125,7 +125,7 @@ function freshState(){return{v:3,name:'przyjaciółko',createdAt:today(),sparks:
   habits:JSON.parse(JSON.stringify(PRESET_HABITS)),log:{},
   ownedThemes:['cream'],theme:'cream',inventory:[],ownedAcc:[],accessory:null,
   treatsGiven:[],garden:[null,null,null],gardenHarvested:[],
-  places:['home','boutique','furniture','cafe','park'],journal:[],lastVisit:null,
+  places:['home','boutique','furniture','cafe','park'],journal:[],lastVisit:null,townBeats:[],
   tab:'today',location:'map'};}
 function load(){
   try{const r=localStorage.getItem(KEY);state=r?JSON.parse(r):freshState();}catch(e){state=freshState();}
@@ -151,8 +151,20 @@ function addSparks(n){const b=levelInfo(state.lifetime).level;state.sparks+=n;st
 function addHearts(n){state.hearts+=n;}
 function addBond(n){const b=bondInfo(state.bond.xp).level;state.bond.xp+=n;const a=bondInfo(state.bond.xp).level;if(a>b){addHearts(1);addMemory('heart',`Twoja przyjaźń z Lilą osiągnęła poziom ${a}`);setTimeout(()=>{toast(`Poziom przyjaźni ${a}! +1 serduszko`,'heart');confetti();},600);}}
 function addMemory(ic,text){state.journal.unshift({ic,text,date:today()});if(state.journal.length>80)state.journal.pop();}
+
+/* ===== Akt 1: budzące się miasteczko ===== */
+const TOWN_TARGET=1200;
+function wakePct(){return Math.min(100,Math.round(state.lifetime/TOWN_TARGET*100));}
+const TOWN_BEATS=[
+  {at:0,id:'arrive',label:'Przybycie',hearts:0,mem:'Lila przybyła do uśpionego miasteczka',toast:'Miasteczko śpi pod szarą mgłą… Twoje nawyki niosą Blask, który je obudzi 🤍'},
+  {at:20,id:'fountain',label:'Fontanna się budzi',hearts:1,mem:'Fontanna w miasteczku się obudziła',toast:'Fontanna budzi się! ✨ +1 serduszko'},
+  {at:45,id:'home',label:'Domek Lili rozświetla się',hearts:1,mem:'Domek Lili się rozświetlił',toast:'Domek Lili rozświetla się 🏡 +1 serduszko'},
+  {at:70,id:'poppy',label:'Ktoś się budzi…',hearts:1,mem:'Ktoś zaczął się budzić w miasteczku…',toast:'Ktoś porusza się w miasteczku… kto to? +1 serduszko'},
+  {at:100,id:'festival',label:'Świetlikowy Festyn',hearts:3,mem:'Świetlikowy Festyn — całe miasteczko obudzone!',toast:'🎉 Świetlikowy Festyn! Całe miasteczko się obudziło! +3 serduszka'}
+];
+function checkTownBeats(){const p=wakePct();let n=0;TOWN_BEATS.forEach(b=>{if(p>=b.at&&!state.townBeats.includes(b.id)){state.townBeats.push(b.id);if(b.hearts)addHearts(b.hearts);addMemory('sparkles2',b.mem);const tx=b.toast,delay=n?1500:500;setTimeout(()=>{toast(tx,'sparkles2');confetti();},delay);n++;}});if(n)save();}
 function registerWin(d){const s=state.streak;if(s.lastWin===d)return;if(!s.lastWin)s.count=1;else{const g=daysBetween(s.lastWin,d);if(g===1)s.count++;else if(g>1){const m=g-1;if(s.freezes>=m){s.freezes-=m;s.count++;toast('Lila uratowała Twoją serię','flame');}else s.count=1;}}s.lastWin=d;const wasBest=s.best;s.count>s.best&&(s.best=s.count);if(s.best>wasBest&&STREAK_HEART_MILES.includes(s.best)){addHearts(2);addMemory('flame',`Seria ${s.best} dni! Super.`);setTimeout(()=>toast(`Seria ${s.best} dni! +2 serduszka`,'flame'),900);}if(s.count>0&&s.count%5===0)s.freezes=Math.min(3,s.freezes+1);}
-function recompute(){const t=today(),day=getDay(t),act=activeHabits();const done=act.filter(h=>countFor(t,h.id)>=1).length;if(done>=dailyGoal()&&state.streak.lastWin!==t)registerWin(t);if(act.length>0&&done===act.length&&!day.perfect){day.perfect=true;addSparks(PERFECT_BONUS);addHearts(1);addBond(4);addMemory('sparkle','Idealny dzień — wszystkie nawyki zrobione!');setTimeout(()=>{toast(`Idealny dzień! +${PERFECT_BONUS} iskierek +1 serduszko`,'sparkle');confetti();},250);}save();}
+function recompute(){const t=today(),day=getDay(t),act=activeHabits();const done=act.filter(h=>countFor(t,h.id)>=1).length;if(done>=dailyGoal()&&state.streak.lastWin!==t)registerWin(t);if(act.length>0&&done===act.length&&!day.perfect){day.perfect=true;addSparks(PERFECT_BONUS);addHearts(1);addBond(4);addMemory('sparkle','Idealny dzień — wszystkie nawyki zrobione!');setTimeout(()=>{toast(`Idealny dzień! +${PERFECT_BONUS} iskierek +1 serduszko`,'sparkle');confetti();},250);}checkTownBeats();save();}
 function tapHabit(h){const t=today(),day=getDay(t),cur=countFor(t,h.id);if(h.repeatable){if(cur>=6)return;day.counts[h.id]=cur+1;addSparks(h.sparks);}else{if(cur>=1){day.counts[h.id]=0;state.sparks=Math.max(0,state.sparks-h.sparks);state.lifetime=Math.max(0,state.lifetime-h.sparks);}else{day.counts[h.id]=1;addSparks(h.sparks);if(state.journal.length===0)addMemory('paw','Twój pierwszy nawyk z Lilą 🐾');}}buzz();celebratePop();recompute();render();}
 function decHabit(h){const t=today(),day=getDay(t),cur=countFor(t,h.id);if(cur<=0)return;day.counts[h.id]=cur-1;state.sparks=Math.max(0,state.sparks-h.sparks);state.lifetime=Math.max(0,state.lifetime-h.sparks);save();render();}
 
@@ -220,14 +232,20 @@ function cheapestLocked(){const l=[...DECOR.filter(d=>!state.inventory.includes(
 /* ----- Świat ----- */
 function viewWorld(){switch(state.location){case'home':return worldHome();case'boutique':return shopAcc('Butik','boutique');case'furniture':return furnitureScreen();case'cafe':return cafeScreen();case'park':return worldPark();case'spa':return spaScreen();default:return worldMap();}}
 function spot(id,label,style){return`<button class="spot" data-act="goto" data-id="${id}" style="${style}"><span>${label}</span></button>`;}
-function worldMap(){const spaUnlocked=state.places.includes('spa');
-  return header()+`<div class="sec"><h2>Świat Lili</h2><span class="meta">dotknij miejsca, by je odwiedzić</span></div>
-    <div class="worldwrap"><div class="worldmap"><img src="assets/lila/world.png" alt="Miasteczko Lili">
+function worldMap(){const spaUnlocked=state.places.includes('spa');const wp=wakePct();const next=TOWN_BEATS.find(b=>!state.townBeats.includes(b.id));
+  return header()+`<div class="sec"><h2>Budzące się miasteczko</h2><span class="meta">dotknij miejsca, by je odwiedzić</span></div>
+    <div class="worldwrap"><div class="worldmap">
+      <img class="town-asleep" src="assets/lila/world_asleep.png" alt="">
+      <img class="town-awake" src="assets/lila/world.png" alt="Miasteczko Lili" style="opacity:${wp/100}">
       ${spot('home','Dom','left:36%;top:18%;width:30%;height:34%')}
       ${spot('boutique','Butik','left:11%;top:30%;width:24%;height:26%')}
       ${spot('cafe','Kawiarnia','left:60%;top:36%;width:31%;height:26%')}
       ${spot('furniture','Meble','left:36%;top:54%;width:30%;height:16%')}
       ${spot('park','Park','left:10%;top:60%;width:35%;height:24%')}
+    </div>
+    <div class="chapter"><div class="ch-top"><b>Akt 1 · Pierwszy Blask</b><span>${wp}%</span></div>
+      <div class="wb"><i style="width:${wp}%"></i></div>
+      ${next?`<div class="ch-next">${icon('sparkles2')} Blask budzi miasteczko — następne: <b>${next.label}</b> (przy ${next.at}%)</div>`:`<div class="ch-next">${icon('trophy')} Całe miasteczko się obudziło! 🎉</div>`}
     </div></div>
     <div class="newplace ${spaUnlocked?'done':''}" data-act="${spaUnlocked?'goto':'unlockspa'}" data-id="spa">
       <div class="np-ic">${icon(spaUnlocked?'sparkles2':'lock')}</div>
@@ -327,5 +345,6 @@ load();
 if(!localStorage.getItem(KEY))save();
 // przyjaźń za codzienne odwiedziny
 if(state.lastVisit!==today()){const gap=state.lastVisit?daysBetween(state.lastVisit,today()):0;addBond(5);if(gap>1)setTimeout(()=>toast('Lila tęskniła! Dobrze, że jesteś 🤍','heart'),500);state.lastVisit=today();save();}
+checkTownBeats();
 render();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
