@@ -212,7 +212,7 @@ function viewToday(){const li=levelInfo(state.lifetime),act=activeHabits();
     <div class="lila-card">
       <div class="speech">${esc(note)}</div>
       <div class="lila-stage">${lilaFig(pose,196)}</div>
-      <div class="lila-name"><b>Lila</b><span class="lvl">Poz. ${li.level}</span><div class="xpbar"><i style="width:${li.pct}%"></i></div></div>
+      <div class="lila-name"><b>Lila</b><span class="lvl">Poziom ${li.level}</span><div class="xpbar"><i style="width:${li.pct}%"></i></div></div>
     </div>
     <div class="sec"><h2>Dzisiaj</h2><span class="meta">${done} z ${act.length} zrobione</span></div>
     <div class="habits">${rows||emptyHabits()}</div>
