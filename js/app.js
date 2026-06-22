@@ -347,4 +347,7 @@ if(!localStorage.getItem(KEY))save();
 if(state.lastVisit!==today()){const gap=state.lastVisit?daysBetween(state.lastVisit,today()):0;addBond(5);if(gap>1)setTimeout(()=>toast('Lila tęskniła! Dobrze, że jesteś 🤍','heart'),500);state.lastVisit=today();save();}
 checkTownBeats();
 render();
-if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.type==='SW_UPDATED')window.location.reload();});
+}
