@@ -131,7 +131,7 @@ function load(){
   try{const r=localStorage.getItem(KEY);state=r?JSON.parse(r):freshState();}catch(e){state=freshState();}
   const f=freshState(); for(const k in f) if(state[k]===undefined) state[k]=f[k];
   if(!state.bond) state.bond={xp:0};
-  PRESET_HABITS.forEach(p=>{if(!state.habits.find(h=>h.id===p.id))state.habits.push(JSON.parse(JSON.stringify(p)));});
+  PRESET_HABITS.forEach(p=>{const ex=state.habits.find(h=>h.id===p.id);if(!ex)state.habits.push(JSON.parse(JSON.stringify(p)));else{ex.name=p.name;ex.sub=p.sub;}});
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(state));}
 
