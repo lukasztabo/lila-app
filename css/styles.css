@@ -132,6 +132,11 @@ img{display:block;-webkit-user-drag:none;user-select:none}
 .nav button svg{width:24px;height:24px}
 .nav button.active{color:var(--pink-deep)}
 
+/* celebrate video overlay */
+#celebrate-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+#celebrate-overlay.show{opacity:1;pointer-events:auto}
+#celebrate-video{width:min(80vw,80vh);height:min(80vw,80vh);border-radius:24px;object-fit:cover;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+
 /* modal / toast */
 .toast{position:fixed;top:18px;left:50%;transform:translateX(-50%) translateY(-80px);background:#fff;
   padding:12px 18px;border-radius:18px;box-shadow:0 10px 30px rgba(180,120,150,.3);font-weight:800;z-index:100;

@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=4">
+<link rel="stylesheet" href="css/styles.css?v=5">
 </head>
 <body>
   <main id="app"></main>
@@ -40,6 +40,11 @@
   <div id="toast" class="toast"></div>
   <div id="scrim" class="scrim"></div>
 
-  <script src="js/app.js?v=4"></script>
+  <div id="celebrate-overlay" onclick="hideCelebrateVideo()">
+    <video id="celebrate-video" src="assets/lila/celebrate_loop.mp4"
+           playsinline muted preload="auto"></video>
+  </div>
+
+  <script src="js/app.js?v=5"></script>
 </body>
 </html>

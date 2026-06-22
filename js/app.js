@@ -146,7 +146,7 @@ const TOWN_BEATS=[
 function checkTownBeats(){const p=wakePct();let n=0;TOWN_BEATS.forEach(b=>{if(p>=b.at&&!state.townBeats.includes(b.id)){state.townBeats.push(b.id);if(b.hearts)addHearts(b.hearts);addMemory('sparkles2',b.mem);const tx=b.toast,delay=n?1500:500;setTimeout(()=>{toast(tx,'sparkles2');confetti();},delay);n++;}});if(n)save();}
 function registerWin(d){const s=state.streak;if(s.lastWin===d)return;if(!s.lastWin)s.count=1;else{const g=daysBetween(s.lastWin,d);if(g===1)s.count++;else if(g>1){const m=g-1;if(s.freezes>=m){s.freezes-=m;s.count++;toast('Lila uratowała Twoją serię','flame');}else s.count=1;}}s.lastWin=d;const wasBest=s.best;s.count>s.best&&(s.best=s.count);if(s.best>wasBest&&STREAK_HEART_MILES.includes(s.best)){addHearts(2);addMemory('flame',`Seria ${s.best} dni! +2 serduszka`);setTimeout(()=>toast(`Seria ${s.best} dni! +2 serduszka`,'flame'),900);}if(s.count>0&&s.count%5===0)s.freezes=Math.min(3,s.freezes+1);}
 function recompute(){const t=today(),day=getDay(t),act=activeHabits();const done=act.filter(h=>countFor(t,h.id)>=1).length;if(done>=dailyGoal()&&state.streak.lastWin!==t)registerWin(t);if(act.length>0&&done===act.length&&!day.perfect){day.perfect=true;addSparks(PERFECT_BONUS);addHearts(1);addMemory('sparkle','Idealny dzień — wszystkie nawyki zrobione!');setTimeout(()=>{toast(`Idealny dzień! +${PERFECT_BONUS} iskierek +1 serduszko`,'sparkle');confetti();},250);}checkTownBeats();save();}
-function tapHabit(h){const t=today(),day=getDay(t),cur=countFor(t,h.id);if(h.repeatable){if(cur>=6)return;day.counts[h.id]=cur+1;addSparks(h.sparks);}else{if(cur>=1){day.counts[h.id]=0;state.sparks=Math.max(0,state.sparks-h.sparks);state.lifetime=Math.max(0,state.lifetime-h.sparks);}else{day.counts[h.id]=1;addSparks(h.sparks);if(state.journal.length===0)addMemory('paw','Twój pierwszy nawyk z Lilą 🐾');}}buzz();celebratePop();recompute();render();}
+function tapHabit(h){const t=today(),day=getDay(t),cur=countFor(t,h.id);if(h.repeatable){if(cur>=6)return;day.counts[h.id]=cur+1;addSparks(h.sparks);}else{if(cur>=1){day.counts[h.id]=0;state.sparks=Math.max(0,state.sparks-h.sparks);state.lifetime=Math.max(0,state.lifetime-h.sparks);}else{day.counts[h.id]=1;addSparks(h.sparks);if(state.journal.length===0)addMemory('paw','Twój pierwszy nawyk z Lilą 🐾');}}buzz();celebratePop();maybeCelebrateVideo();recompute();render();}
 function decHabit(h){const t=today(),day=getDay(t),cur=countFor(t,h.id);if(cur<=0)return;day.counts[h.id]=cur-1;state.sparks=Math.max(0,state.sparks-h.sparks);state.lifetime=Math.max(0,state.lifetime-h.sparks);save();render();}
 
 /* ===== kupowanie ===== */
@@ -167,6 +167,23 @@ function harvest(idx){const p=state.garden[idx];if(plotStage(p)<3)return;const s
 /* ===== reakcje ===== */
 function buzz(){try{navigator.vibrate&&navigator.vibrate(14);}catch(e){}}
 let toastT;function toast(m,ic){const el=document.getElementById('toast');el.innerHTML=icon(ic||'sparkle')+`<span>${m}</span>`;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2300);}
+function maybeCelebrateVideo(){
+  if(Math.random()>1.0)return;
+  const ov=document.getElementById('celebrate-overlay');
+  const vid=document.getElementById('celebrate-video');
+  if(!ov||!vid)return;
+  vid.currentTime=0;
+  vid.play().catch(()=>{});
+  ov.classList.add('show');
+  vid.onended=()=>hideCelebrateVideo();
+}
+function hideCelebrateVideo(){
+  const ov=document.getElementById('celebrate-overlay');
+  const vid=document.getElementById('celebrate-video');
+  if(!ov)return;
+  ov.classList.remove('show');
+  if(vid){vid.pause();vid.currentTime=0;}
+}
 function celebratePop(){const st=document.querySelector('.lila-stage,.care-stage');if(!st)return;const img=st.querySelector('img.lila');if(!img)return;const was=img.getAttribute('src');img.src='assets/lila/celebrate.png';st.classList.add('pop');setTimeout(()=>{st.classList.remove('pop');if(!isPerfectToday())img.src=was;},1100);}
 function isPerfectToday(){const a=activeHabits();return a.length>0&&a.every(h=>countFor(today(),h.id)>=1);}
 function confetti(){const c=['#F2A0BC','#C7B4EC','#8FD7BC','#F6D27A','#FBA7C6'];for(let i=0;i<26;i++){const d=document.createElement('div');d.className='confetti';d.style.background=c[i%c.length];d.style.left=(10+Math.random()*80)+'%';d.style.top='-20px';document.body.appendChild(d);d.animate([{transform:'translateY(0) rotate(0)',opacity:1},{transform:`translateY(${innerHeight+40}px) rotate(${360+Math.random()*360}deg)`,opacity:.9}],{duration:1400+Math.random()*900,easing:'cubic-bezier(.3,.6,.5,1)'}).onfinish=()=>d.remove();}}

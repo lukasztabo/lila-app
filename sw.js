@@ -1,6 +1,6 @@
-const CACHE = 'lila-v8';
+const CACHE = 'lila-v9';
 const IMG_ASSETS = [
-  './assets/lila/hero.png', './assets/lila/celebrate.png', './assets/lila/sleep.png',
+  './assets/lila/hero.png', './assets/lila/celebrate.png', './assets/lila/celebrate_loop.mp4', './assets/lila/sleep.png',
   './assets/lila/world.png', './assets/lila/world_asleep.png',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png', './assets/icons/apple-touch-icon.png'
 ];
