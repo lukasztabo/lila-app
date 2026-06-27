@@ -215,8 +215,7 @@ function viewToday(){const li=levelInfo(state.lifetime),act=activeHabits();
   const rows=act.map(h=>{const c=countFor(today(),h.id),t=TINT[h.color]||TINT.pink,isDone=c>=1;
     const right=h.repeatable?`<div class="rep"><button data-act="dec" data-id="${h.id}" ${c<=0?'style="opacity:.35"':''}>−</button><span class="cnt">×${c}</span><button data-act="tap" data-id="${h.id}">+</button></div>`:`<div class="check">${icon('check')}</div>`;
     return`<div class="habit ${isDone?'done':''}" ${h.repeatable?'':`data-act="tap" data-id="${h.id}"`}><div class="ic" style="background:${t.bg};color:${t.fg}">${icon(h.icon)}</div><div class="tx"><b>${esc(h.name)}</b><span>${esc(h.sub)}</span></div><div class="val">${icon('sparkle')}${h.sparks}</div>${right}</div>`;}).join('');
-  let banner;if(perfect)banner=`<div class="banner perfect">${icon('sparkle')}<div>Idealny dzień — wszystko zrobione!<small>Lila jest z Ciebie taka dumna</small></div></div>`;
-  else{const nx=cheapestLocked();banner=nx?`<div class="banner next">${icon('gift')}<div>Następne dla Lili: ${esc(nx.name)}<small>jeszcze ${Math.max(0,nx.cost-state.sparks)} iskierek</small></div></div>`:`<div class="banner next">${icon('star')}<div>Tyle już odkryłaś!<small>Świat Lili jest cudowny</small></div></div>`;}
+  const banner=perfect?`<div class="banner perfect">${icon('sparkle')}<div>Idealny dzień — wszystko zrobione!<small>Lila jest z Ciebie taka dumna</small></div></div>`:'';
   return header()+`
     <div class="lila-card">
       <div class="speech">${esc(note)}</div>
@@ -236,7 +235,6 @@ function todayRitual(){
   return`<button class="ritual ${teaDone?'done':''}" data-act="cafe-go"><div class="r-ic">🫖</div><div class="r-tx"><b>Herbatka z Olive</b><span>${teaDone?'Byłaś dziś 🤍 — możesz wpaść znowu':'Chwila spokoju — usiądź z Olive w kawiarni'}</span></div><span class="r-go">${teaDone?icon('check','style="width:18px;height:18px;color:#2F9B72"'):icon('back','style="transform:rotate(180deg);width:16px;height:16px"')}</span></button>`;
 }
 function emptyHabits(){return`<div class="banner next" style="margin:8px 0">${icon('heart')}<div>Nie masz jeszcze nawyków<small>Kliknij „Nawyki" na dole, aby wybrać</small></div></div>`;}
-function cheapestLocked(){const l=[...DECOR.filter(d=>!state.inventory.includes(d.id)),...THEMES.filter(t=>!state.ownedThemes.includes(t.id)),...TREATS.filter(t=>!state.treatsGiven.includes(t.id))].sort((a,b)=>a.cost-b.cost);return l[0];}
 
 /* ----- Świat ----- */
 function viewWorld(){switch(state.location){case'home':return worldHome();case'furniture':return furnitureScreen();case'cafe':return cafeScreen();case'park':return worldPark();case'spa':return spaScreen();default:return worldMap();}}
