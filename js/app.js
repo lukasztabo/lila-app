@@ -113,6 +113,7 @@ function freshState(){return{v:4,name:'przyjaciółko',createdAt:today(),sparks:
   home:{owned:[],edit:false,sel:null,room:'wood',layout:{}},
   park:{edit:false,tool:null,sel:null,ownedTiles:['earth'],ownedProps:[],objects:{},nextUid:1,
     grid:[['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth']]},
+  moodLog:[],cafe:{lastCalm:null},
   tab:'today',location:'map'};}
 function load(){
   try{const r=localStorage.getItem(KEY);state=r?JSON.parse(r):freshState();}catch(e){state=freshState();}
@@ -259,8 +260,58 @@ function setBar(key){const owned=setOwned(key).length,total=SETS[key].items.leng
 function furnitureScreen(){const themes=THEMES.map(t=>{const owned=state.ownedThemes.includes(t.id),active=state.theme===t.id;return`<div class="shopcard"><div class="pre"><div class="swatch" style="background:${t.wall}"></div></div><b>${t.name}</b><button class="buy ${owned?'owned':(state.sparks<t.cost?'cant':'')}" data-act="buytheme" data-id="${t.id}">${active?'Wybrany':owned?'Wybierz':icon('sparkle')+' '+t.cost}</button></div>`;}).join('');
   const furn=DECOR.map(d=>{const owned=state.inventory.includes(d.id);return`<div class="shopcard"><div class="pre">${d.svg.replace('width="100%"','width="62"')}</div><b>${esc(d.name)}</b><button class="buy ${owned?'owned':(state.sparks<d.cost?'cant':'')}" data-act="buyhome" data-id="${d.id}">${owned?'Posiadane':icon('sparkle')+' '+d.cost}</button></div>`;}).join('');
   return locHeader('Sklep z meblami')+setBar('home')+`<div class="subsec">Motywy pokoju</div><div class="shop">${themes}</div><div class="subsec">Meble</div><div class="shop">${furn}</div><div style="height:8px"></div>`;}
-function cafeScreen(){const cards=TREATS.map(it=>{const got=state.treatsGiven.includes(it.id);return`<div class="shopcard"><div class="pre">${it.svg.replace('width="100%"','width="56"')}</div><b>${esc(it.name)} ${got?icon('check','style="width:13px;height:13px;color:#2F9B72;vertical-align:-1px"'):''}</b><button class="buy ${state.sparks<it.cost?'cant':''}" data-act="treat" data-id="${it.id}">${icon('sparkle')} ${it.cost}</button></div>`;}).join('');
-  return locHeader('Kawiarnia')+`<div class="shoplila">${lilaFig('hero',150)}</div><p class="note">Poczęstuj Lilę czymś pysznym i wypełnij kolekcję.</p>${setBar('treats')}<div class="shop">${cards}</div><div style="height:8px"></div>`;}
+/* ===== Kawiarnia Olive — hub dobrostanu ===== */
+const OLIVE_LINES=['Tak miło, że wpadłaś 🤍','Usiądź, odpocznijmy chwilę.','Zrobiłam świeżą herbatę.','Dziś, jak zawsze, jesteś tu mile widziana.','Razem zawsze raźniej.','Dobrze Cię widzieć 🌿'];
+const RITUALS=[
+  {ic:'🫖',name:'Herbatka z Olive',sub:'Spokojny oddech · 3 min',act:'cafe-tea'},
+  {ic:'🌿',name:'Chwila wdzięczności',sub:'Co dziś było miłe?',act:'cafe-gratitude'},
+  {ic:'💬',name:'Jak się czujesz?',sub:'Powiedz Olive',act:'cafe-mood'},
+  {ic:'🍃',name:'Szybki oddech',sub:'1 minuta na już',act:'cafe-quick'},
+];
+const RECIPES=[
+  {ic:'🍓',name:'Truskawkowe smoothie',line:'Różowe, z ogrodowych truskawek.'},
+  {ic:'🌸',name:'Kwiatowa herbatka',line:'Pachnie jak wiosenny ogród.'},
+  {ic:'🫐',name:'Borówkowy chłodnik',line:'Chłodny i kojący.'},
+  {ic:'🍋',name:'Miętowa lemoniada',line:'Orzeźwia po spacerze.'},
+];
+function dayIndex(){const d=new Date();return Math.floor((d-new Date(d.getFullYear(),0,0))/86400000);}
+function todayRecipe(){const i=dayIndex();return i%3===0?RECIPES[i%RECIPES.length]:null;}
+function cafeScreen(){
+  const greet=OLIVE_LINES[(new Date().getDay()+state.journal.length)%OLIVE_LINES.length];
+  const cards=RITUALS.map(r=>`<button class="ritual" data-act="${r.act}"><div class="r-ic">${r.ic}</div><div class="r-tx"><b>${r.name}</b><span>${r.sub}</span></div><span class="r-go">${icon('back','style="transform:rotate(180deg);width:16px;height:16px"')}</span></button>`).join('');
+  const rc=todayRecipe();
+  const recipe=rc?`<button class="ritual recipe" data-act="cafe-recipe"><div class="r-ic">${rc.ic}</div><div class="r-tx"><b>Przepis dnia: ${rc.name}</b><span>Olive ma dziś coś specjalnego</span></div><span class="r-go">${icon('sparkles2','style="width:16px;height:16px"')}</span></button>`:'';
+  return locHeader('Kawiarnia Olive')+`
+    <div class="cafe-hero"><img src="assets/cafe/interior.png" alt="Kawiarnia"><div class="cafe-olive"><img src="assets/cafe/olive.png" alt="Olive"></div></div>
+    <div class="speech cafe-speech">${esc(greet)}</div>
+    <p class="note" style="text-align:center;margin:6px 16px">Miejsce na spokój i bycie razem — wracaj, kiedy chcesz.</p>
+    <div class="rituals">${cards}${recipe}</div><div style="height:10px"></div>`;
+}
+/* — oddech — */
+let breathT=null;
+function startBreath(durSec){
+  const ov=document.getElementById('breath-overlay');if(!ov)return;
+  const label=ov.querySelector('.breath-label'),prog=ov.querySelector('.breath-prog-i'),circle=ov.querySelector('.breath-circle');
+  ov.classList.add('show');
+  circle.style.animation='none';void circle.offsetWidth;circle.style.animation='breathe 12s ease-in-out infinite';
+  prog.style.transition='none';prog.style.width='0%';void prog.offsetWidth;prog.style.transition=`width ${durSec}s linear`;prog.style.width='100%';
+  const PH=[['Wdech',4000],['Zatrzymaj',2000],['Wydech',6000]];let pi=0;
+  clearTimeout(breathT);
+  (function phase(){label.textContent=PH[pi][0];if(pi===0||pi===2)buzz();const d=PH[pi][1];pi=(pi+1)%3;breathT=setTimeout(phase,d);})();
+  clearTimeout(window._breathEnd);window._breathEnd=setTimeout(()=>finishBreath(),durSec*1000);
+}
+function clearBreath(){clearTimeout(breathT);clearTimeout(window._breathEnd);const ov=document.getElementById('breath-overlay');if(ov)ov.classList.remove('show');}
+function stopBreath(){clearBreath();}
+function finishBreath(){clearBreath();const first=state.cafe.lastCalm!==today();addMemory('sparkles2','Chwila spokoju z Olive — taki oddech 🤍');if(first){state.cafe.lastCalm=today();addHearts(1);confetti();toast('Pięknie. Lila i Olive są takie spokojne 🤍 +1 serduszko','sparkles2');}else toast('Pięknie 🤍','sparkles2');save();render();}
+/* — wdzięczność — */
+function openGratitude(){const scrim=document.getElementById('scrim');scrim.innerHTML=`<div class="sheet"><h3>Chwila wdzięczności 🌿</h3><p class="note" style="margin:0 0 10px">Olive pyta: co dziś było miłe? Wpisz 1–3 rzeczy.</p><div class="field"><input id="g1" maxlength="60" placeholder="np. spacer w słońcu"></div><div class="field"><input id="g2" maxlength="60" placeholder="coś jeszcze? (opcjonalnie)"></div><div class="field"><input id="g3" maxlength="60" placeholder="i jeszcze? (opcjonalnie)"></div><div class="row"><button class="cancel" data-act="closesheet">Anuluj</button><button class="save" data-act="savegratitude">Zapisz</button></div></div>`;scrim.classList.add('show');}
+function saveGratitude(){const vals=['g1','g2','g3'].map(id=>document.getElementById(id).value.trim()).filter(Boolean);if(!vals.length){closeSheet();return;}vals.forEach(v=>addMemory('leaf',`Wdzięczność: ${v}`));const first=state.cafe.lastCalm!==today();if(first){state.cafe.lastCalm=today();addHearts(1);}closeSheet();toast('Olive uśmiecha się ciepło 🤍','heart');confetti();save();render();}
+/* — nastrój — */
+const MOODS=[['great','😊','spokojnie'],['good','🙂','dobrze'],['meh','😐','tak sobie'],['low','😟','trudno'],['tired','😴','zmęczona']];
+function openMood(){const scrim=document.getElementById('scrim');const btns=MOODS.map(m=>`<button class="moodbtn" data-act="pickmood" data-id="${m[0]}"><span class="me">${m[1]}</span><small>${m[2]}</small></button>`).join('');scrim.innerHTML=`<div class="sheet"><h3>Jak się dziś czujesz? 💬</h3><p class="note" style="margin:0 0 10px">Olive słucha. Możesz jej powiedzieć.</p><div class="moodrow">${btns}</div><div class="row"><button class="cancel" data-act="closesheet">Może później</button></div></div>`;scrim.classList.add('show');}
+function pickMood(id){const m=MOODS.find(x=>x[0]===id);state.moodLog.unshift({date:today(),mood:id});if(state.moodLog.length>120)state.moodLog.pop();const resp={great:'Cudownie 🤍 Cieszę się razem z Tobą.',good:'To miło słyszeć 🤍',meh:'Dziękuję, że powiedziałaś. Tak też bywa.',low:'Dziękuję, że mi zaufałaś. Jestem tu z Tobą 🤍',tired:'Odpocznij, na ile możesz. Herbatka czeka 🤍'}[id];addMemory('heart',`Powiedziałaś Olive: czuję się ${m[2]}`);closeSheet();toast(resp,'heart');save();render();}
+/* — przepis — */
+function showRecipe(){const rc=todayRecipe();if(!rc)return;toast(`${rc.ic} ${rc.name} — ${rc.line}`,'sparkles2');confetti();}
 /* ===== Dom Lili — urządzanie ===== */
 const FURN_LIST=[
   {id:'rug',name:'Dywan',cost:20,shadow:'none',defH:0.16},
@@ -459,6 +510,14 @@ function handle(a,id){switch(a){
   case'park-size':parkSelOp(o=>o.h=Math.max(0.04,Math.min(0.5,o.h+(id==='+'?0.012:-0.012))));break;
   case'park-layer':parkSelOp(o=>o.z=Math.max(0,(o.z||0)+(id==='u'?1:-1)));break;
   case'park-remove':parkRemove();break;
+  case'cafe-tea':startBreath(180);break;
+  case'cafe-quick':startBreath(60);break;
+  case'cafe-gratitude':openGratitude();break;
+  case'cafe-mood':openMood();break;
+  case'cafe-recipe':showRecipe();break;
+  case'breath-stop':stopBreath();break;
+  case'savegratitude':saveGratitude();break;
+  case'pickmood':pickMood(id);break;
   case'tap':tapHabit(state.habits.find(h=>h.id===id));break;
   case'dec':decHabit(state.habits.find(h=>h.id===id));break;
   case'treat':giveTreat(TREATS.find(t=>t.id===id));break;

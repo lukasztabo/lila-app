@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=11">
+<link rel="stylesheet" href="css/styles.css?v=12">
 </head>
 <body>
   <main id="app"></main>
@@ -45,9 +45,19 @@
            playsinline muted preload="auto"></video>
   </div>
 
+  <div id="breath-overlay">
+    <div class="breath-bg"><img src="assets/cafe/tea_scene.png" alt=""></div>
+    <div class="breath-inner">
+      <div class="breath-circle"><span class="breath-label">Wdech</span></div>
+      <p class="breath-hint">Zamknij oczy i oddychaj z nami 🤍</p>
+    </div>
+    <div class="breath-prog"><div class="breath-prog-i"></div></div>
+    <button class="breath-close" data-act="breath-stop">Zakończ</button>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="js/cloud-config.js?v=1"></script>
   <script src="js/cloud.js?v=1"></script>
-  <script src="js/app.js?v=12"></script>
+  <script src="js/app.js?v=13"></script>
 </body>
 </html>
