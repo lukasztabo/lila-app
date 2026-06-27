@@ -110,6 +110,10 @@ function freshState(){return{v:4,name:'przyjaciółko',createdAt:today(),sparks:
   ownedThemes:['cream'],theme:'cream',inventory:[],
   treatsGiven:[],garden:[null,null,null],gardenHarvested:[],
   places:['home','furniture','cafe','park'],journal:[],townBeats:[],
+  home:{owned:['bed','rug','dog_bed'],edit:false,sel:null,layout:{
+    rug:{x:0.50,y:0.72,h:0.16,z:0,fx:false,rot:0},
+    bed:{x:0.30,y:0.54,h:0.26,z:2,fx:false,rot:0},
+    dog_bed:{x:0.62,y:0.80,h:0.12,z:3,fx:false,rot:0}}},
   tab:'today',location:'map'};}
 function load(){
   try{const r=localStorage.getItem(KEY);state=r?JSON.parse(r):freshState();}catch(e){state=freshState();}
@@ -193,7 +197,7 @@ function lilaFig(pose,height){return`<div class="lilawrap" style="height:${heigh
 
 /* ===== render ===== */
 const app=()=>document.getElementById('app');
-function render(){const v={today:viewToday,world:viewWorld,journey:viewJourney,habits:viewHabits}[state.tab]||viewToday;app().innerHTML=v();document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.id===state.tab));}
+function render(){const v={today:viewToday,world:viewWorld,journey:viewJourney,habits:viewHabits}[state.tab]||viewToday;app().innerHTML=v();document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.id===state.tab));initHomeScreen();}
 function header(){return`<div class="topbar">
     <div class="greet"><div class="hi">Cześć</div><div class="nm">${esc(state.name)}</div></div>
     <div class="chips"><div class="chip flame">${icon('flame')}${displayStreak()}</div><div class="chip heart">${icon('heart')}${state.hearts}</div><div class="chip spark">${icon('sparkle')}${state.sparks}</div></div></div>`;}
@@ -250,9 +254,83 @@ function furnitureScreen(){const themes=THEMES.map(t=>{const owned=state.ownedTh
   return locHeader('Sklep z meblami')+setBar('home')+`<div class="subsec">Motywy pokoju</div><div class="shop">${themes}</div><div class="subsec">Meble</div><div class="shop">${furn}</div><div style="height:8px"></div>`;}
 function cafeScreen(){const cards=TREATS.map(it=>{const got=state.treatsGiven.includes(it.id);return`<div class="shopcard"><div class="pre">${it.svg.replace('width="100%"','width="56"')}</div><b>${esc(it.name)} ${got?icon('check','style="width:13px;height:13px;color:#2F9B72;vertical-align:-1px"'):''}</b><button class="buy ${state.sparks<it.cost?'cant':''}" data-act="treat" data-id="${it.id}">${icon('sparkle')} ${it.cost}</button></div>`;}).join('');
   return locHeader('Kawiarnia')+`<div class="shoplila">${lilaFig('hero',150)}</div><p class="note">Poczęstuj Lilę czymś pysznym i wypełnij kolekcję.</p>${setBar('treats')}<div class="shop">${cards}</div><div style="height:8px"></div>`;}
-function worldHome(){const th=THEMES.find(t=>t.id===state.theme)||THEMES[0];
-  const items=DECOR.filter(d=>state.inventory.includes(d.id)).map(d=>`<div class="item" style="${d.pos}">${d.svg}</div>`).join('');
-  return locHeader('Dom Lili')+`<div class="room-wrap"><div class="room care-stage"><div style="position:absolute;inset:0;background:${th.wall}"></div><div class="floor" style="background:${th.floor}"></div>${items}<div class="roomlila">${lilaFig('hero',176)}</div></div></div><div class="hintline">${icon('home')} Odwiedź sklepy w mieście, aby ocieplić dom Lili</div><div style="height:8px"></div>`;}
+/* ===== Dom Lili — urządzanie ===== */
+const FURN_LIST=[
+  {id:'rug',name:'Dywan',cost:20,shadow:'none',defH:0.16},
+  {id:'bed',name:'Łóżko',cost:55,shadow:'floor',defH:0.26},
+  {id:'dog_bed',name:'Legowisko Lili',cost:30,shadow:'floor',defH:0.12},
+  {id:'armchair',name:'Fotel',cost:50,shadow:'floor',defH:0.23},
+  {id:'cushion',name:'Poduszka',cost:15,shadow:'none',defH:0.10},
+  {id:'shelf',name:'Półka',cost:45,shadow:'floor',defH:0.24},
+  {id:'lamp',name:'Lampa',cost:40,shadow:'floor',defH:0.25},
+  {id:'plant',name:'Roślina',cost:25,shadow:'floor',defH:0.20},
+  {id:'nightstand',name:'Szafka nocna',cost:35,shadow:'floor',defH:0.15},
+  {id:'round_table',name:'Stolik',cost:40,shadow:'floor',defH:0.15},
+  {id:'toy_chest',name:'Skrzynia',cost:45,shadow:'floor',defH:0.15},
+  {id:'beanbag',name:'Pufa',cost:40,shadow:'floor',defH:0.17},
+  {id:'teddy',name:'Miś',cost:20,shadow:'floor',defH:0.11},
+  {id:'flower_vase',name:'Wazon',cost:25,shadow:'floor',defH:0.11},
+  {id:'picture_frame',name:'Obrazek',cost:30,shadow:'none',defH:0.13,wall:true},
+  {id:'wall_clock',name:'Zegar',cost:30,shadow:'none',defH:0.12,wall:true},
+  {id:'wall_shelf',name:'Półka ścienna',cost:35,shadow:'none',defH:0.11,wall:true},
+  {id:'string_lights',name:'Lampki',cost:30,shadow:'none',defH:0.06,wall:true},
+  {id:'curtains',name:'Zasłony',cost:35,shadow:'none',defH:0.20,wall:true},
+  {id:'hanging_plant',name:'Kwiat wiszący',cost:30,shadow:'none',defH:0.18,wall:true},
+];
+const FURN=Object.fromEntries(FURN_LIST.map(f=>[f.id,f]));
+function homeTopZ(){const L=state.home.layout;let m=0;for(const k in L)m=Math.max(m,L[k].z||0);return m;}
+function homePlace(id){const f=FURN[id];if(!f)return;state.home.layout[id]={x:0.5,y:f.wall?0.30:0.62,h:f.defH,z:homeTopZ()+1,fx:false,rot:0};state.home.sel=id;}
+function homeBuy(id){const f=FURN[id];if(!f)return;if(state.home.owned.includes(id)){homePlace(id);save();render();return;}if(!spend(f.cost))return;state.home.owned.push(id);homePlace(id);addMemory('home',`Do domu Lili trafił/a: ${f.name.toLowerCase()}`);toast(`Kupiono: ${f.name.toLowerCase()}! Przeciągnij gdzie chcesz`,'gift');buzz();confetti();save();render();}
+function homeRemove(){const id=state.home.sel;if(!id)return;delete state.home.layout[id];state.home.sel=null;save();render();}
+function homeSelOp(fn){const id=state.home.sel,p=id&&state.home.layout[id];if(!p)return;fn(p);save();render();}
+function worldHome(){const H=state.home,L=H.layout;
+  const ids=Object.keys(L).sort((a,b)=>(L[a].z||0)-(L[b].z||0));
+  const pieces=ids.map(id=>{const p=L[id],f=FURN[id];if(!f)return'';const sel=H.edit&&H.sel===id;
+    const sh=f.shadow==='floor'?'filter:drop-shadow(2px 7px 5px rgba(60,42,52,.32));':'';
+    return`<img class="furni ${sel?'sel':''}" data-fid="${id}" src="assets/home/${id}.png" draggable="false" style="left:${p.x*100}%;top:${p.y*100}%;height:${p.h*100}%;z-index:${10+(p.z||0)};transform:translate(-50%,-100%) rotate(${p.rot||0}deg) scaleX(${p.fx?-1:1});${sh}">`;}).join('');
+  const room=`<div class="droom ${H.edit?'editing':''}" id="droom"><img class="droom-bg" src="assets/home/room_bg.png" draggable="false">${pieces}</div>`;
+  const editBtn=`<button class="editbtn ${H.edit?'on':''}" data-act="home-edit">${icon(H.edit?'check':'pencil')} ${H.edit?'Gotowe':'Urządzaj'}</button>`;
+  let toolbar='';
+  if(H.edit){const has=H.sel&&L[H.sel];
+    toolbar=`<div class="dtools ${has?'':'dim'}">
+      <button data-act="home-rot" data-id="l">↺</button>
+      <button data-act="home-rot" data-id="r">↻</button>
+      <button data-act="home-flip">⇋</button>
+      <button data-act="home-size" data-id="-">−</button>
+      <button data-act="home-size" data-id="+">+</button>
+      <button data-act="home-layer" data-id="d">↧</button>
+      <button data-act="home-layer" data-id="u">↥</button>
+      <button data-act="home-remove" class="del">✕</button>
+    </div>`;}
+  let drawer='';
+  if(H.edit){
+    const placed=new Set(Object.keys(L));
+    const ownedNot=state.home.owned.filter(id=>!placed.has(id)).map(id=>FURN[id]).filter(Boolean);
+    const shop=FURN_LIST.filter(f=>!state.home.owned.includes(f.id));
+    const card=(f,act,label)=>`<button class="dcard" data-act="${act}" data-id="${f.id}"><img src="assets/home/${f.id}.png"><b>${esc(f.name)}</b><small>${label}</small></button>`;
+    drawer=`<div class="ddrawer">
+      ${ownedNot.length?`<div class="dlab">Twoje meble — dotknij, by postawić</div><div class="drow">${ownedNot.map(f=>card(f,'home-place','postaw')).join('')}</div>`:''}
+      <div class="dlab">Sklep — kup za iskierki</div>
+      <div class="drow">${shop.map(f=>card(f,'home-buy',icon('sparkle')+' '+f.cost)).join('')||'<small style="color:#9a8a7a;padding:8px">Masz już wszystko 🎉</small>'}</div>
+    </div>`;}
+  return locHeader('Dom Lili')+`<div class="dtop">${editBtn}</div>
+    <div class="droom-wrap">${room}</div>${toolbar}${drawer}
+    ${H.edit?'':`<div class="hintline">${icon('home')} Dotknij „Urządzaj", by przesuwać meble i kupować nowe</div>`}<div style="height:8px"></div>`;}
+function initHomeScreen(){
+  if(!(state.tab==='world'&&state.location==='home'&&state.home.edit))return;
+  const room=document.getElementById('droom');if(!room)return;
+  let drag=null;
+  const onMove=e=>{if(!drag)return;const r=room.getBoundingClientRect();let x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;x=Math.max(0,Math.min(1,x));y=Math.max(0,Math.min(1,y));const p=state.home.layout[drag.id];if(!p)return;p.x=x;p.y=y;drag.el.style.left=x*100+'%';drag.el.style.top=y*100+'%';drag.moved=true;};
+  room.querySelectorAll('.furni').forEach(el=>{
+    el.addEventListener('pointerdown',e=>{const id=el.dataset.fid;state.home.sel=id;
+      room.querySelectorAll('.furni').forEach(f=>f.classList.toggle('sel',f===el));
+      const tb=document.querySelector('.dtools');if(tb)tb.classList.remove('dim');
+      drag={id,el,moved:false};try{el.setPointerCapture(e.pointerId);}catch(_){}e.preventDefault();e.stopPropagation();});
+    el.addEventListener('pointermove',onMove);
+    el.addEventListener('pointerup',()=>{if(drag){const moved=drag.moved;drag=null;save();if(!moved)render();}});
+  });
+  room.addEventListener('pointerdown',e=>{if(e.target===room||e.target.classList.contains('droom-bg')){if(state.home.sel){state.home.sel=null;render();}}});
+}
 function worldPark(){const walk=state.habits.find(h=>h.id==='walk');
   const blooms=state.garden.map((p,i)=>p&&plotStage(p)>=3?`<div class="item" style="${['left:14%','left:44%','right:14%'][i]};bottom:16%;width:15%;z-index:3">${SEEDS.find(s=>s.id===p.seed).bloom}</div>`:'').join('');
   const plots=state.garden.map((p,i)=>{
@@ -299,6 +377,14 @@ function handle(a,id){switch(a){
   case'nav':state.tab=id;if(id==='world')state.location='map';render();scrollTo(0,0);break;
   case'goto':state.location=id;render();scrollTo(0,0);break;
   case'backmap':state.location='map';render();scrollTo(0,0);break;
+  case'home-edit':state.home.edit=!state.home.edit;if(!state.home.edit)state.home.sel=null;save();render();break;
+  case'home-buy':homeBuy(id);break;
+  case'home-place':homePlace(id);save();render();break;
+  case'home-remove':homeRemove();break;
+  case'home-flip':homeSelOp(p=>p.fx=!p.fx);break;
+  case'home-rot':homeSelOp(p=>p.rot=((p.rot||0)+(id==='l'?-15:15)));break;
+  case'home-size':homeSelOp(p=>p.h=Math.max(0.05,Math.min(0.6,p.h+(id==='+'?0.015:-0.015))));break;
+  case'home-layer':homeSelOp(p=>p.z=Math.max(0,(p.z||0)+(id==='u'?1:-1)));break;
   case'tap':tapHabit(state.habits.find(h=>h.id===id));break;
   case'dec':decHabit(state.habits.find(h=>h.id===id));break;
   case'treat':giveTreat(TREATS.find(t=>t.id===id));break;
