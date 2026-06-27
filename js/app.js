@@ -208,6 +208,12 @@ function header(){return`<div class="topbar">
     <div class="chips"><div class="chip flame">${icon('flame')}${displayStreak()}</div><div class="chip heart">${icon('heart')}${state.hearts}</div><div class="chip spark">${icon('sparkle')}${state.sparks}</div></div></div>`;}
 
 /* ----- Dzisiaj ----- */
+function blaskBar(){const wp=wakePct();
+  const locked=Object.keys(PLACE_WAKE).filter(id=>PLACE_WAKE[id]>0&&wp<PLACE_WAKE[id]).sort((a,b)=>PLACE_WAKE[a]-PLACE_WAKE[b]);
+  let next;
+  if(locked.length)next=`${PLACE_NAME[locked[0]]} otwiera się przy ${PLACE_WAKE[locked[0]]}%`;
+  else{const b=TOWN_BEATS.find(b=>!state.townBeats.includes(b.id));next=b?`${b.label} przy ${b.at}%`:'całe miasteczko obudzone 🎉';}
+  return`<button class="blask" data-act="nav" data-id="world"><div class="blask-top"><b>${icon('sparkles2')} Blask miasteczka</b><span>${wp}%</span></div><div class="wb"><i style="width:${wp}%"></i></div><small>Następne: ${next}</small></button>`;}
 function viewToday(){const li=levelInfo(state.lifetime),act=activeHabits();
   const done=act.filter(h=>countFor(today(),h.id)>=1).length;
   const perfect=isPerfectToday(),pose=perfect?'celebrate':'hero';
@@ -223,6 +229,7 @@ function viewToday(){const li=levelInfo(state.lifetime),act=activeHabits();
       <div class="lila-stage">${lilaFig(pose,196)}</div>
       <div class="lila-name"><b>Lila</b><span class="lvl">Poziom ${li.level}</span><div class="xpbar"><i style="width:${li.pct}%"></i></div></div>
     </div>
+    ${blaskBar()}
     <div class="sec"><h2>Dzisiaj</h2><span class="meta">${done} z ${act.length} zrobione</span></div>
     <div class="habits">${rows||emptyHabits()}</div>
     <div class="sec"><h2>Chwila dla siebie</h2></div>
@@ -479,8 +486,15 @@ function viewJourney(){const names=['N','Pn','Wt','Śr','Cz','Pt','So'];let cell
   const cols=Object.keys(SETS).map(k=>{const o=setOwned(k).length,t=SETS[k].items.length;return`<div class="colrow"><span>${SETS[k].name}</span><div class="sb"><i style="width:${Math.round(o/t*100)}%"></i></div><b>${o}/${t}</b></div>`;}).join('');
   const mems=state.journal.length?state.journal.slice(0,18).map(m=>`<div class="mem"><div class="mem-ic">${icon(m.ic)}</div><div class="mem-tx"><b>${esc(m.text)}</b><small>${relDay(m.date)}</small></div></div>`).join(''):`<p class="note">Twoje wspomnienia z Lilą pojawią się tutaj 🤍</p>`;
   const badges=BADGES.map(b=>{const got=b.test(state),t=TINT[b.color];return`<div class="badge ${got?'':'locked'}"><div class="em" style="background:${got?t.bg:'#EFE5DE'};color:${got?t.fg:'#B7A6AE'}">${icon(got?b.icon:'lock')}</div><small>${b.name}</small></div>`;}).join('');
+  const moodEmoji={great:'😊',good:'🙂',meh:'😐',low:'😟',tired:'😴'};
+  let moodCells='';for(let i=6;i>=0;i--){const d=shiftDay(today(),-i),m=state.moodLog.find(x=>x.date===d),dt=new Date(d+'T00:00:00');moodCells+=`<div class="d"><small>${names[dt.getDay()]}</small><div class="mface">${m?moodEmoji[m.mood]:'·'}</div></div>`;}
+  const grats=state.gratitudeLog.slice(0,4).map(g=>`<div class="gitem">${icon('leaf')}<span>${esc(g.text)}</span><small>${relDay(g.date)}</small></div>`).join('')||`<p class="note" style="margin:6px 16px">Twoje wdzięczności z Olive pojawią się tutaj 🌿</p>`;
+  const wellbeing=`<div class="cal">${moodCells}</div>
+    <div class="stats" style="grid-template-columns:1fr 1fr"><div class="stat"><div class="n">${state.calmLog.length}</div><div class="l">Chwile spokoju 🫖</div></div><div class="stat"><div class="n">${state.gratitudeLog.length}</div><div class="l">Wdzięczności 🌿</div></div></div>
+    <div class="gwrap">${grats}</div>`;
   return header()+`<div class="sec"><h2>Ten tydzień</h2></div><div class="cal">${cells}</div>
     <div class="stats"><div class="stat"><div class="n">${displayStreak()}</div><div class="l">Seria dni${state.streak.freezes?` · ${state.streak.freezes} ❄`:''}</div></div><div class="stat"><div class="n">${li.level}</div><div class="l">Poziom Lili</div></div><div class="stat"><div class="n">${state.lifetime}</div><div class="l">Zdobyte iskierki</div></div><div class="stat"><div class="n">${state.hearts}</div><div class="l">Serduszka</div></div></div>
+    <div class="sec"><h2>Twój spokój</h2><span class="meta">z Olive 🦌</span></div>${wellbeing}
     <div class="sec"><h2>Wspomnienia</h2><span class="meta">${icon('book')}</span></div><div class="memwrap">${mems}</div>
     <div class="sec"><h2>Kolekcje</h2></div><div class="cols">${cols}</div>
     <div class="sec"><h2>Odznaki</h2><span class="meta">Lila poz. ${li.level}</span></div><div class="badges">${badges}</div><div style="height:8px"></div>`;}
