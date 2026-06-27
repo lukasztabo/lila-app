@@ -84,7 +84,7 @@ const BADGES=[
   {id:'first',name:'Pierwszy krok',icon:'paw',color:'pink',test:s=>s.lifetime>=1},
   {id:'s7',name:'Cały tydzień',icon:'flame',color:'amber',test:s=>s.streak.best>=7},
   {id:'sp100',name:'100 iskierek',icon:'sparkle',color:'lav',test:s=>s.lifetime>=100},
-  {id:'lvl5',name:'Lila poz. 5',icon:'star',color:'pink',test:s=>levelInfo(s.lifetime).level>=5},
+  {id:'lvl5',name:'Poziom 5',icon:'star',color:'pink',test:s=>levelInfo(s.lifetime).level>=5},
   {id:'s30',name:'Cały miesiąc',icon:'trophy',color:'amber',test:s=>s.streak.best>=30},
   {id:'green',name:'Zielony kciuk',icon:'sprout',color:'green',test:s=>s.gardenHarvested.length>=3},
   {id:'collector',name:'Kolekcjonerka',icon:'gift',color:'lav',test:s=>['treats','home','garden'].some(k=>setDone(k,s))}
@@ -237,9 +237,12 @@ function emptyHabits(){return`<div class="banner next" style="margin:8px 0">${ic
 
 /* ----- Świat ----- */
 function viewWorld(){switch(state.location){case'home':return worldHome();case'furniture':return furnitureScreen();case'cafe':return cafeScreen();case'park':return worldPark();case'spa':return spaScreen();default:return worldMap();}}
-function spot(id,label,style){const locked=placeLocked(id),lv=PLACE_LEVEL[id]||1;return`<button class="spot ${locked?'locked':''}" data-act="goto" data-id="${id}" style="${style}"><span>${locked?icon('lock')+' poz. '+lv:label}</span></button>`;}
-function worldMap(){const li=levelInfo(state.lifetime),spaOpen=!placeLocked('spa');
+function spot(id,label,style){const locked=placeLocked(id);return`<button class="spot ${locked?'locked':''}" data-act="goto" data-id="${id}" style="${style}"><span>${locked?icon('lock')+' '+label:label}</span></button>`;}
+function worldMap(){const li=levelInfo(state.lifetime);
   const nextUnlock=Object.keys(PLACE_LEVEL).filter(id=>PLACE_LEVEL[id]===li.level+1).map(id=>PLACE_NAME[id])[0];
+  const npId=Object.keys(PLACE_LEVEL).filter(id=>placeLocked(id)).sort((a,b)=>PLACE_LEVEL[a]-PLACE_LEVEL[b])[0]||'spa';
+  const npOpen=!placeLocked(npId);
+  const NP_DESC={cafe:'Herbatka i chwila spokoju z Olive',park:'Twój park do urządzania',spa:'Dzień relaksu dla Lili'};
   return header()+`<div class="sec"><h2>Miasteczko Lili</h2><span class="meta">dotknij miejsca, by wejść</span></div>
     <div class="worldwrap"><div class="worldmap">
       <img class="town-map" src="assets/lila/world.png" alt="Miasteczko Lili">
@@ -251,10 +254,10 @@ function worldMap(){const li=levelInfo(state.lifetime),spaOpen=!placeLocked('spa
       <div class="wb"><i style="width:${li.pct}%"></i></div>
       <div class="ch-next">${icon('star')} ${nextUnlock?`Na poziomie ${li.level+1} otworzy się <b>${nextUnlock}</b>`:`Zbierasz do poziomu ${li.level+1}`}</div>
     </div></div>
-    <div class="newplace ${spaOpen?'done':''}" data-act="goto" data-id="spa">
-      <div class="np-ic">${icon(spaOpen?'sparkles2':'lock')}</div>
-      <div class="np-tx"><b>Spa Lili</b><small>${spaOpen?'Otwarte — wpadnij na dzień relaksu':`Odblokuje się na poziomie ${PLACE_LEVEL.spa}`}</small></div>
-      <div class="np-cost">${spaOpen?icon('back','style="transform:rotate(180deg)"'):icon('star')+' '+PLACE_LEVEL.spa}</div>
+    <div class="newplace ${npOpen?'done':''}" data-act="goto" data-id="${npId}">
+      <div class="np-ic">${icon(npOpen?'sparkles2':'lock')}</div>
+      <div class="np-tx"><b>${PLACE_NAME[npId]}</b><small>${npOpen?'Otwarte — dotknij, by wejść':`${NP_DESC[npId]||''} · otwiera się na poziomie ${PLACE_LEVEL[npId]}`}</small></div>
+      <div class="np-cost">${npOpen?icon('back','style="transform:rotate(180deg)"'):icon('star')+' '+PLACE_LEVEL[npId]}</div>
     </div>
     <div class="hintline">${icon('sparkle')} <b>${state.sparks}</b> iskierek do wydania</div>`;}
 function locHeader(title){return`<div class="locbar"><button class="back" data-act="backmap">${icon('back')} Miasto</button><div class="chips"><div class="chip spark">${icon('sparkle')}${state.sparks}</div></div></div><div class="sec"><h2>${title}</h2></div>`;}
@@ -482,7 +485,7 @@ function viewJourney(){const names=['N','Pn','Wt','Śr','Cz','Pt','So'];let cell
     <div class="stats"><div class="stat"><div class="n">${displayStreak()}</div><div class="l">Seria dni${state.streak.freezes?` · ${state.streak.freezes} ❄`:''}</div></div><div class="stat"><div class="n">${state.lifetime}</div><div class="l">Zdobyte iskierki</div></div><div class="stat"><div class="n">${levelInfo(state.lifetime).level}</div><div class="l">Poziom Lili</div></div><div class="stat"><div class="n">${state.streak.best||0}</div><div class="l">Najlepsza seria</div></div></div>
     <div class="sec"><h2>Twój spokój</h2><span class="meta">z Olive 🦌</span></div>${wellbeing}
     <div class="sec"><h2>Wspomnienia</h2><span class="meta">${icon('book')}</span></div><div class="memwrap">${mems}</div>
-    <div class="sec"><h2>Odznaki</h2><span class="meta">Lila poz. ${li.level}</span></div><div class="badges">${badges}</div><div style="height:8px"></div>`;}
+    <div class="sec"><h2>Odznaki</h2><span class="meta">Poziom ${li.level}</span></div><div class="badges">${badges}</div><div style="height:8px"></div>`;}
 
 /* ----- Nawyki ----- */
 function viewHabits(){const rows=state.habits.map(h=>{const t=TINT[h.color]||TINT.pink;return`<div class="erow ${h.active?'':'off'}"><div class="ic" style="width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:${t.bg};color:${t.fg}">${icon(h.icon)}</div><div class="tx" ${h.builtin?'':`data-act="edit" data-id="${h.id}"`}><b>${esc(h.name)} ${h.builtin?'':icon('pencil','style="width:13px;height:13px;vertical-align:-1px;opacity:.5"')}</b><span>${esc(h.sub)} · ${h.sparks} iskierek${h.repeatable?' · wielokrotny':''}</span></div><div class="toggle ${h.active?'on':''}" data-act="toggle" data-id="${h.id}"><i></i></div></div>`;}).join('');
