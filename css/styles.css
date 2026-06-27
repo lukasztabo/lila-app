@@ -292,3 +292,10 @@ img{display:block;-webkit-user-drag:none;user-select:none}
 .dcard b{font-size:11px;font-weight:800;color:var(--ink);text-align:center;line-height:1.1}
 .dcard small{font-size:11px;font-weight:800;color:var(--lav-deep);display:flex;align-items:center;gap:2px}
 .dcard small svg{width:12px;height:12px}
+
+/* wybór podłogi/stylu pokoju */
+.froom{flex:0 0 auto;width:96px;border:2.5px solid transparent;border-radius:14px;padding:0;overflow:hidden;background:#fff;font-family:inherit}
+.froom img{width:100%;height:70px;object-fit:cover;display:block}
+.froom small{display:block;font-size:11px;font-weight:800;color:var(--ink-soft);padding:4px 2px}
+.froom.on{border-color:var(--pink)}
+.froom.on small{color:var(--pink-deep)}

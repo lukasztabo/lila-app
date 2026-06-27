@@ -1,4 +1,4 @@
-const CACHE = 'lila-v13';
+const CACHE = 'lila-v14';
 const IMG_ASSETS = [
   './assets/lila/hero.png', './assets/lila/celebrate.png', './assets/lila/celebrate_loop.mp4', './assets/lila/sleep.png',
   './assets/lila/world.png', './assets/lila/world_asleep.png',

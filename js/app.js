@@ -110,7 +110,7 @@ function freshState(){return{v:4,name:'przyjaciółko',createdAt:today(),sparks:
   ownedThemes:['cream'],theme:'cream',inventory:[],
   treatsGiven:[],garden:[null,null,null],gardenHarvested:[],
   places:['home','furniture','cafe','park'],journal:[],townBeats:[],
-  home:{owned:['bed','rug','dog_bed'],edit:false,sel:null,layout:{
+  home:{owned:['bed','rug','dog_bed'],edit:false,sel:null,room:'wood',layout:{
     rug:{x:0.50,y:0.72,h:0.16,z:0,fx:false,rot:0},
     bed:{x:0.30,y:0.54,h:0.26,z:2,fx:false,rot:0},
     dog_bed:{x:0.62,y:0.80,h:0.12,z:3,fx:false,rot:0}}},
@@ -119,8 +119,12 @@ function load(){
   try{const r=localStorage.getItem(KEY);state=r?JSON.parse(r):freshState();}catch(e){state=freshState();}
   const f=freshState();for(const k in f)if(state[k]===undefined)state[k]=f[k];
   PRESET_HABITS.forEach(p=>{const ex=state.habits.find(h=>h.id===p.id);if(!ex)state.habits.push(JSON.parse(JSON.stringify(p)));else{ex.name=p.name;ex.sub=p.sub;}});
+  if(state.home&&!state.home.room)state.home.room='wood';
 }
-function save(){localStorage.setItem(KEY,JSON.stringify(state));}
+function save(){localStorage.setItem(KEY,JSON.stringify(state));if(window.Cloud)window.Cloud.onLocalSave();}
+/* ===== mosty do chmury (Supabase) ===== */
+window.getCloudState=function(){return state;};
+window.adoptCloudState=function(remote){try{state=remote;const f=freshState();for(const k in f)if(state[k]===undefined)state[k]=f[k];localStorage.setItem(KEY,JSON.stringify(state));render();}catch(e){console.warn('adopt',e);}};
 
 /* ===== pochodne ===== */
 const activeHabits=()=>state.habits.filter(h=>h.active);
@@ -288,7 +292,7 @@ function worldHome(){const H=state.home,L=H.layout;
   const pieces=ids.map(id=>{const p=L[id],f=FURN[id];if(!f)return'';const sel=H.edit&&H.sel===id;
     const sh=f.shadow==='floor'?'filter:drop-shadow(2px 7px 5px rgba(60,42,52,.32));':'';
     return`<img class="furni ${sel?'sel':''}" data-fid="${id}" src="assets/home/${id}.png" draggable="false" style="left:${p.x*100}%;top:${p.y*100}%;height:${p.h*100}%;z-index:${10+(p.z||0)};transform:translate(-50%,-100%) rotate(${p.rot||0}deg) scaleX(${p.fx?-1:1});${sh}">`;}).join('');
-  const room=`<div class="droom ${H.edit?'editing':''}" id="droom"><img class="droom-bg" src="assets/home/room_bg.png" draggable="false">${pieces}</div>`;
+  const room=`<div class="droom ${H.edit?'editing':''}" id="droom"><img class="droom-bg" src="assets/home/room_${H.room||'wood'}.png" draggable="false">${pieces}</div>`;
   const editBtn=`<button class="editbtn ${H.edit?'on':''}" data-act="home-edit">${icon(H.edit?'check':'pencil')} ${H.edit?'Gotowe':'Urządzaj'}</button>`;
   let toolbar='';
   if(H.edit){const has=H.sel&&L[H.sel];
@@ -308,7 +312,10 @@ function worldHome(){const H=state.home,L=H.layout;
     const ownedNot=state.home.owned.filter(id=>!placed.has(id)).map(id=>FURN[id]).filter(Boolean);
     const shop=FURN_LIST.filter(f=>!state.home.owned.includes(f.id));
     const card=(f,act,label)=>`<button class="dcard" data-act="${act}" data-id="${f.id}"><img src="assets/home/${f.id}.png"><b>${esc(f.name)}</b><small>${label}</small></button>`;
+    const ROOMS=[['wood','Drewno'],['palewood','Jasne drewno'],['tiles','Kafelki'],['carpet','Dywan']];
+    const rooms=ROOMS.map(([id,name])=>`<button class="froom ${(H.room||'wood')===id?'on':''}" data-act="home-room" data-id="${id}"><img src="assets/home/room_${id}.png"><small>${name}</small></button>`).join('');
     drawer=`<div class="ddrawer">
+      <div class="dlab">Podłoga / styl pokoju</div><div class="drow">${rooms}</div>
       ${ownedNot.length?`<div class="dlab">Twoje meble — dotknij, by postawić</div><div class="drow">${ownedNot.map(f=>card(f,'home-place','postaw')).join('')}</div>`:''}
       <div class="dlab">Sklep — kup za iskierki</div>
       <div class="drow">${shop.map(f=>card(f,'home-buy',icon('sparkle')+' '+f.cost)).join('')||'<small style="color:#9a8a7a;padding:8px">Masz już wszystko 🎉</small>'}</div>
@@ -385,6 +392,7 @@ function handle(a,id){switch(a){
   case'home-rot':homeSelOp(p=>p.rot=((p.rot||0)+(id==='l'?-15:15)));break;
   case'home-size':homeSelOp(p=>p.h=Math.max(0.05,Math.min(0.6,p.h+(id==='+'?0.015:-0.015))));break;
   case'home-layer':homeSelOp(p=>p.z=Math.max(0,(p.z||0)+(id==='u'?1:-1)));break;
+  case'home-room':state.home.room=id;save();render();break;
   case'tap':tapHabit(state.habits.find(h=>h.id===id));break;
   case'dec':decHabit(state.habits.find(h=>h.id===id));break;
   case'treat':giveTreat(TREATS.find(t=>t.id===id));break;
@@ -416,3 +424,4 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
   navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.type==='SW_UPDATED')window.location.reload();});
 }
+if(window.Cloud)window.Cloud.init();
