@@ -110,10 +110,7 @@ function freshState(){return{v:4,name:'przyjaciółko',createdAt:today(),sparks:
   ownedThemes:['cream'],theme:'cream',inventory:[],
   treatsGiven:[],garden:[null,null,null],gardenHarvested:[],
   places:['home','cafe','park'],journal:[],townBeats:[],wokenPlaces:[],
-  home:{owned:['bed','rug','dog_bed'],edit:false,sel:null,room:'wood',layout:{
-    rug:{x:0.50,y:0.72,h:0.16,z:0,fx:false,rot:0},
-    bed:{x:0.30,y:0.54,h:0.26,z:2,fx:false,rot:0},
-    dog_bed:{x:0.62,y:0.80,h:0.12,z:3,fx:false,rot:0}}},
+  home:{owned:[],edit:false,sel:null,room:'wood',layout:{}},
   park:{edit:false,tool:null,sel:null,ownedTiles:['earth'],ownedProps:[],objects:{},nextUid:1,
     grid:[['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth']]},
   tab:'today',location:'map'};}
