@@ -303,3 +303,13 @@ img{display:block;-webkit-user-drag:none;user-select:none}
 /* miejsce zablokowane (jeszcze śpi) */
 .spot.locked span{background:rgba(120,110,125,.82);color:#fff;display:flex;align-items:center;gap:3px}
 .spot.locked span svg{width:11px;height:11px}
+
+/* ===== Park — builder strefy ===== */
+.pgwrap{padding:0 16px}
+.pgrid{position:relative;width:100%;aspect-ratio:5/3.8;container-type:size;background:#F4ECDF;border-radius:22px;overflow:hidden;touch-action:none;box-shadow:0 8px 26px rgba(120,90,110,.18)}
+.ptile{position:absolute;transform:translate(-50%,-50%);-webkit-user-drag:none;user-select:none}
+.pobj{position:absolute;transform-origin:bottom center;-webkit-user-drag:none;user-select:none}
+.pgrid.editing .pobj{cursor:grab}
+.pobj.sel{outline:2.5px dashed #5cc8ff;outline-offset:1px}
+.dcard.on{border-color:var(--mint-deep);background:var(--mint-bg)}
+.dcard.on small{color:var(--mint-deep)}

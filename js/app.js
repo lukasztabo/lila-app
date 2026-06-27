@@ -114,6 +114,8 @@ function freshState(){return{v:4,name:'przyjaciółko',createdAt:today(),sparks:
     rug:{x:0.50,y:0.72,h:0.16,z:0,fx:false,rot:0},
     bed:{x:0.30,y:0.54,h:0.26,z:2,fx:false,rot:0},
     dog_bed:{x:0.62,y:0.80,h:0.12,z:3,fx:false,rot:0}}},
+  park:{edit:false,tool:null,sel:null,ownedTiles:['earth'],ownedProps:[],objects:{},nextUid:1,
+    grid:[['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth']]},
   tab:'today',location:'map'};}
 function load(){
   try{const r=localStorage.getItem(KEY);state=r?JSON.parse(r):freshState();}catch(e){state=freshState();}
@@ -202,7 +204,7 @@ function lilaFig(pose,height){return`<div class="lilawrap" style="height:${heigh
 
 /* ===== render ===== */
 const app=()=>document.getElementById('app');
-function render(){const v={today:viewToday,world:viewWorld,journey:viewJourney,habits:viewHabits}[state.tab]||viewToday;app().innerHTML=v();document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.id===state.tab));initHomeScreen();}
+function render(){const v={today:viewToday,world:viewWorld,journey:viewJourney,habits:viewHabits}[state.tab]||viewToday;app().innerHTML=v();document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.id===state.tab));initHomeScreen();initParkScreen();}
 function header(){return`<div class="topbar">
     <div class="greet"><div class="hi">Cześć</div><div class="nm">${esc(state.name)}</div></div>
     <div class="chips"><div class="chip flame">${icon('flame')}${displayStreak()}</div><div class="chip heart">${icon('heart')}${state.hearts}</div><div class="chip spark">${icon('sparkle')}${state.sparks}</div></div></div>`;}
@@ -343,17 +345,72 @@ function initHomeScreen(){
   });
   room.addEventListener('pointerdown',e=>{if(e.target===room||e.target.classList.contains('droom-bg')){if(state.home.sel){state.home.sel=null;render();}}});
 }
-function worldPark(){const walk=state.habits.find(h=>h.id==='walk');
-  const blooms=state.garden.map((p,i)=>p&&plotStage(p)>=3?`<div class="item" style="${['left:14%','left:44%','right:14%'][i]};bottom:16%;width:15%;z-index:3">${SEEDS.find(s=>s.id===p.seed).bloom}</div>`:'').join('');
-  const plots=state.garden.map((p,i)=>{
-    if(!p)return`<div class="plot empty" data-act="plant" data-id="${i}"><div class="soil">${icon('plus')}</div><small>Zasadź</small></div>`;
-    const st=plotStage(p),s=SEEDS.find(x=>x.id===p.seed);
-    const art=st>=3?s.bloom.replace('width="100%"','width="46"'):`<svg viewBox="0 0 40 50" width="40"><ellipse cx="20" cy="44" rx="13" ry="5" fill="#C9A98A"/>${st===0?'<circle cx="20" cy="40" r="3" fill="#8a6b50"/>':st===1?'<path d="M20 44v-10" stroke="#5FB894" stroke-width="3"/><path d="M20 36c-6 0-8-6-8-6s6-1 8 6z" fill="#7FBE9C"/>':'<path d="M20 44V26" stroke="#5FB894" stroke-width="3"/><circle cx="20" cy="24" r="6" fill="#A6E0C9"/>'}</svg>`;
-    const action=st>=3?`<button class="pbtn harvest" data-act="harvest" data-id="${i}">Zbierz ${icon('heart')}</button>`:`<button class="pbtn ${p.watered===today()?'wet':''}" data-act="water" data-id="${i}">${p.watered===today()?'Podlane':'Podlej'}</button>`;
-    return`<div class="plot"><div class="soil grown">${art}</div><small>${st>=3?s.name:['Nasionko','Kiełek','Pączek'][st]}</small>${action}</div>`;}).join('');
-  return locHeader('Park i ogród')+`<div class="room-wrap"><div class="room park"><div style="position:absolute;inset:0;background:linear-gradient(180deg,#CFEFDD,#BCE6CF)"></div><div class="floor" style="background:#A9DCC0"></div>${blooms}<div class="roomlila">${lilaFig('hero',146)}</div></div></div>
-    <button class="walkbtn" data-act="walk">${icon('walk')} Zabierz Lilę na spacer <span>+${walk?walk.sparks:12} ✦</span></button>
-    <div class="subsec">Zasadź coś ładnego</div><div class="garden"><div class="plots">${plots}</div></div><div class="shop" style="margin-top:8px"></div><div style="height:8px"></div>`;}
+/* ===== Park — strefa-builder (kafelki + obiekty) ===== */
+const PARK_TILES=[
+  {id:'earth',name:'Ziemia',cost:0},
+  {id:'grass',name:'Trawa',cost:8},
+  {id:'path',name:'Ścieżka',cost:12},
+  {id:'water',name:'Woda',cost:20},
+];
+const PARK_PROPS=[
+  {id:'p_tree',name:'Drzewo',cost:30,defH:0.22},
+  {id:'p_bush',name:'Krzew',cost:15,defH:0.12},
+  {id:'p_flowers',name:'Klomb',cost:18,defH:0.10},
+  {id:'p_fountain',name:'Fontanna',cost:60,defH:0.20},
+  {id:'p_bench',name:'Ławka',cost:35,defH:0.12},
+  {id:'p_lamp',name:'Lampa',cost:30,defH:0.20},
+];
+const PARKP=Object.fromEntries(PARK_PROPS.map(p=>[p.id,p]));
+const PN=5,P_OX=50,P_OY=12,P_SX=10,P_SY=5,P_TW=20;
+function parkPos(c,r){return{x:P_OX+(c-r)*P_SX,y:P_OY+(c+r)*P_SY};}
+function parkTopZ(){let m=0;for(const k in state.park.objects)m=Math.max(m,state.park.objects[k].z||0);return m;}
+function parkAddProp(id){const p=PARKP[id];const uid='o'+(state.park.nextUid++);state.park.objects[uid]={prop:id,gx:2,gy:2,h:p.defH,z:parkTopZ()+1,fx:false,rot:0};state.park.sel=uid;}
+function parkBuyTile(id){const t=PARK_TILES.find(x=>x.id===id);if(!t)return;if(!state.park.ownedTiles.includes(id)){if(!spend(t.cost))return;state.park.ownedTiles.push(id);buzz();}state.park.tool=(state.park.tool===id?null:id);save();render();}
+function parkBuyProp(id){const p=PARKP[id];if(!p)return;if(!state.park.ownedProps.includes(id)){if(!spend(p.cost))return;state.park.ownedProps.push(id);addMemory('sprout',`Do parku trafił/a: ${p.name.toLowerCase()}`);toast(`Kupiono: ${p.name.toLowerCase()}! Przeciągnij gdzie chcesz`,'gift');buzz();confetti();}parkAddProp(id);state.park.tool=null;save();render();}
+function parkSelOp(fn){const id=state.park.sel,o=id&&state.park.objects[id];if(!o)return;fn(o);save();render();}
+function parkRemove(){const id=state.park.sel;if(!id)return;delete state.park.objects[id];state.park.sel=null;save();render();}
+function worldPark(){const P=state.park,walk=state.habits.find(h=>h.id==='walk');
+  let tiles='';
+  for(let r=0;r<PN;r++)for(let c=0;c<PN;c++){const pos=parkPos(c,r),t=P.grid[r][c]||'earth';
+    tiles+=`<img class="ptile" data-pt="${c}_${r}" src="assets/park/t_${t}.png" draggable="false" style="left:${pos.x}cqw;top:${pos.y}cqw;width:${P_TW}cqw;z-index:${c+r}">`;}
+  const ids=Object.keys(P.objects).sort((a,b)=>(P.objects[a].gx+P.objects[a].gy)-(P.objects[b].gx+P.objects[b].gy));
+  const objs=ids.map(uid=>{const o=P.objects[uid],pos=parkPos(o.gx,o.gy),sel=P.edit&&P.sel===uid;
+    return`<img class="pobj ${sel?'sel':''}" data-uid="${uid}" src="assets/park/${o.prop}.png" draggable="false" style="left:${pos.x}cqw;top:${pos.y}cqw;height:${o.h*100}cqw;z-index:${100+Math.round((o.gx+o.gy)*10)};transform:translate(-50%,-100%) rotate(${o.rot||0}deg) scaleX(${o.fx?-1:1});filter:drop-shadow(2px 6px 4px rgba(50,40,48,.30))">`;}).join('');
+  const grid=`<div class="pgrid ${P.edit?'editing':''}" id="pgrid">${tiles}${objs}</div>`;
+  const editBtn=`<button class="editbtn ${P.edit?'on':''}" data-act="park-edit">${icon(P.edit?'check':'pencil')} ${P.edit?'Gotowe':'Urządzaj'}</button>`;
+  const walkBtn=`<button class="walkbtn" data-act="walk">${icon('walk')} Zabierz Lilę na spacer <span>+${walk?walk.sparks:12} ✦</span></button>`;
+  let toolbar='';
+  if(P.edit){const has=P.sel&&P.objects[P.sel];
+    toolbar=`<div class="dtools ${has?'':'dim'}">
+      <button data-act="park-rot" data-id="l">↺</button><button data-act="park-rot" data-id="r">↻</button>
+      <button data-act="park-flip">⇋</button>
+      <button data-act="park-size" data-id="-">−</button><button data-act="park-size" data-id="+">+</button>
+      <button data-act="park-layer" data-id="d">↧</button><button data-act="park-layer" data-id="u">↥</button>
+      <button data-act="park-remove" class="del">✕</button></div>`;}
+  let drawer='';
+  if(P.edit){
+    const tcard=t=>{const owned=P.ownedTiles.includes(t.id),active=P.tool===t.id;return`<button class="dcard ${active?'on':''}" data-act="park-tile" data-id="${t.id}"><img src="assets/park/t_${t.id}.png"><b>${t.name}</b><small>${owned?(active?'maluję ✏️':'maluj'):icon('sparkle')+' '+t.cost}</small></button>`;};
+    const pcard=p=>{const owned=P.ownedProps.includes(p.id);return`<button class="dcard" data-act="park-prop" data-id="${p.id}"><img src="assets/park/${p.id}.png"><b>${p.name}</b><small>${owned?'+ dodaj':icon('sparkle')+' '+p.cost}</small></button>`;};
+    drawer=`<div class="ddrawer">
+      <div class="dlab">Podłoże — dotknij typ, potem maluj po siatce</div><div class="drow">${PARK_TILES.map(tcard).join('')}</div>
+      <div class="dlab">Obiekty</div><div class="drow">${PARK_PROPS.map(pcard).join('')}</div></div>`;}
+  return locHeader('Park i ogród')+`<div class="dtop">${editBtn}</div><div class="pgwrap">${grid}</div>${toolbar}${drawer}${P.edit?'':walkBtn}<div style="height:8px"></div>`;}
+function initParkScreen(){
+  if(!(state.tab==='world'&&state.location==='park'&&state.park.edit))return;
+  const grid=document.getElementById('pgrid');if(!grid)return;const P=state.park;
+  function toCell(e){const r=grid.getBoundingClientRect();const xc=(e.clientX-r.left)/r.width*100,yc=(e.clientY-r.top)/r.width*100;const A=(xc-P_OX)/P_SX,B=(yc-P_OY)/P_SY;return{c:Math.round((A+B)/2),r:Math.round((B-A)/2),gx:(A+B)/2,gy:(B-A)/2};}
+  function paintAt(e){const o=toCell(e);if(o.c>=0&&o.c<PN&&o.r>=0&&o.r<PN&&P.tool){if(P.grid[o.r][o.c]!==P.tool){P.grid[o.r][o.c]=P.tool;const el=grid.querySelector(`[data-pt="${o.c}_${o.r}"]`);if(el)el.src=`assets/park/t_${P.tool}.png`;}}}
+  let odrag=null;
+  grid.querySelectorAll('.pobj').forEach(el=>{
+    el.addEventListener('pointerdown',e=>{const uid=el.dataset.uid;P.sel=uid;grid.querySelectorAll('.pobj').forEach(o=>o.classList.toggle('sel',o===el));const tb=document.querySelector('.dtools');if(tb)tb.classList.remove('dim');odrag={uid,el,moved:false};try{el.setPointerCapture(e.pointerId);}catch(_){}e.preventDefault();e.stopPropagation();});
+    el.addEventListener('pointermove',e=>{if(!odrag||odrag.uid!==el.dataset.uid)return;const o=P.objects[odrag.uid];if(!o)return;const cc=toCell(e);o.gx=Math.max(0,Math.min(PN-1,cc.gx));o.gy=Math.max(0,Math.min(PN-1,cc.gy));const pos=parkPos(o.gx,o.gy);el.style.left=pos.x+'cqw';el.style.top=pos.y+'cqw';el.style.zIndex=100+Math.round((o.gx+o.gy)*10);odrag.moved=true;});
+    el.addEventListener('pointerup',()=>{if(odrag){const m=odrag.moved;odrag=null;save();if(!m)render();}});
+  });
+  let painting=false;
+  grid.addEventListener('pointerdown',e=>{if(e.target.classList.contains('pobj'))return;if(P.tool){painting=true;paintAt(e);e.preventDefault();}else if(P.sel){P.sel=null;render();}});
+  grid.addEventListener('pointermove',e=>{if(painting)paintAt(e);});
+  grid.addEventListener('pointerup',()=>{if(painting){painting=false;save();}});
+}
 function spaScreen(){const day=getDay(today());const spaDone=day.flags.spa;
   return locHeader('Spa Lili')+`<div class="room-wrap"><div class="room care-stage"><div style="position:absolute;inset:0;background:linear-gradient(180deg,#E3F1FB,#E9E4F7)"></div><div class="floor" style="background:#D4E6F2"></div><div class="roomlila">${lilaFig(spaDone?'sleep':'hero',160)}</div></div></div>
     <button class="walkbtn" style="background:#9C86D6" data-act="spaday" ${spaDone?'disabled':''}>${icon('sparkles2')} ${spaDone?'Lila odpoczywa dziś cudownie 🤍':'Zafunduj Lili dzień relaksu'} ${spaDone?'':' <span>+1 ♥</span>'}</button>
@@ -398,6 +455,14 @@ function handle(a,id){switch(a){
   case'home-size':homeSelOp(p=>p.h=Math.max(0.05,Math.min(0.6,p.h+(id==='+'?0.015:-0.015))));break;
   case'home-layer':homeSelOp(p=>p.z=Math.max(0,(p.z||0)+(id==='u'?1:-1)));break;
   case'home-room':state.home.room=id;save();render();break;
+  case'park-edit':state.park.edit=!state.park.edit;if(!state.park.edit){state.park.sel=null;state.park.tool=null;}save();render();break;
+  case'park-tile':parkBuyTile(id);break;
+  case'park-prop':parkBuyProp(id);break;
+  case'park-flip':parkSelOp(o=>o.fx=!o.fx);break;
+  case'park-rot':parkSelOp(o=>o.rot=((o.rot||0)+(id==='l'?-15:15)));break;
+  case'park-size':parkSelOp(o=>o.h=Math.max(0.04,Math.min(0.5,o.h+(id==='+'?0.012:-0.012))));break;
+  case'park-layer':parkSelOp(o=>o.z=Math.max(0,(o.z||0)+(id==='u'?1:-1)));break;
+  case'park-remove':parkRemove();break;
   case'tap':tapHabit(state.habits.find(h=>h.id===id));break;
   case'dec':decHabit(state.habits.find(h=>h.id===id));break;
   case'treat':giveTreat(TREATS.find(t=>t.id===id));break;
