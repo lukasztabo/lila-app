@@ -113,7 +113,7 @@ function freshState(){return{v:4,name:'przyjaciółko',createdAt:today(),sparks:
   home:{owned:[],edit:false,sel:null,room:'wood',layout:{}},
   park:{edit:false,tool:null,sel:null,ownedTiles:['earth'],ownedProps:[],objects:{},nextUid:1,
     grid:[['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth']]},
-  moodLog:[],cafe:{lastCalm:null},
+  moodLog:[],gratitudeLog:[],calmLog:[],cafe:{lastCalm:null},
   tab:'today',location:'map'};}
 function load(){
   try{const r=localStorage.getItem(KEY);state=r?JSON.parse(r):freshState();}catch(e){state=freshState();}
@@ -296,8 +296,9 @@ function cafeScreen(){
     <div class="rituals">${cards}${recipe}</div><div style="height:10px"></div>`;
 }
 /* — oddech — */
-let breathT=null;
+let breathT=null,breathDur=0;
 function startBreath(durSec){
+  breathDur=durSec;
   const ov=document.getElementById('breath-overlay');if(!ov)return;
   const label=ov.querySelector('.breath-label'),prog=ov.querySelector('.breath-prog-i'),circle=ov.querySelector('.breath-circle');
   ov.classList.add('show');
@@ -310,10 +311,10 @@ function startBreath(durSec){
 }
 function clearBreath(){clearTimeout(breathT);clearTimeout(window._breathEnd);const ov=document.getElementById('breath-overlay');if(ov)ov.classList.remove('show');}
 function stopBreath(){clearBreath();}
-function finishBreath(){clearBreath();const first=state.cafe.lastCalm!==today();addMemory('sparkles2','Chwila spokoju z Olive — taki oddech 🤍');if(first){state.cafe.lastCalm=today();addHearts(1);confetti();toast('Pięknie. Lila i Olive są takie spokojne 🤍 +1 serduszko','sparkles2');}else toast('Pięknie 🤍','sparkles2');save();render();}
+function finishBreath(){clearBreath();state.calmLog.unshift({date:today(),sec:breathDur});if(state.calmLog.length>200)state.calmLog.length=200;const first=state.cafe.lastCalm!==today();addMemory('sparkles2','Chwila spokoju z Olive — taki oddech 🤍');if(first){state.cafe.lastCalm=today();addHearts(1);confetti();toast('Pięknie. Lila i Olive są takie spokojne 🤍 +1 serduszko','sparkles2');}else toast('Pięknie 🤍','sparkles2');save();render();}
 /* — wdzięczność — */
 function openGratitude(){const scrim=document.getElementById('scrim');scrim.innerHTML=`<div class="sheet"><h3>Chwila wdzięczności 🌿</h3><p class="note" style="margin:0 0 10px">Olive pyta: co dziś było miłe? Wpisz 1–3 rzeczy.</p><div class="field"><input id="g1" maxlength="60" placeholder="np. spacer w słońcu"></div><div class="field"><input id="g2" maxlength="60" placeholder="coś jeszcze? (opcjonalnie)"></div><div class="field"><input id="g3" maxlength="60" placeholder="i jeszcze? (opcjonalnie)"></div><div class="row"><button class="cancel" data-act="closesheet">Anuluj</button><button class="save" data-act="savegratitude">Zapisz</button></div></div>`;scrim.classList.add('show');}
-function saveGratitude(){const vals=['g1','g2','g3'].map(id=>document.getElementById(id).value.trim()).filter(Boolean);if(!vals.length){closeSheet();return;}vals.forEach(v=>addMemory('leaf',`Wdzięczność: ${v}`));const first=state.cafe.lastCalm!==today();if(first){state.cafe.lastCalm=today();addHearts(1);}closeSheet();toast('Olive uśmiecha się ciepło 🤍','heart');confetti();save();render();}
+function saveGratitude(){const vals=['g1','g2','g3'].map(id=>document.getElementById(id).value.trim()).filter(Boolean);if(!vals.length){closeSheet();return;}vals.forEach(v=>{state.gratitudeLog.unshift({date:today(),text:v});addMemory('leaf',`Wdzięczność: ${v}`);});if(state.gratitudeLog.length>200)state.gratitudeLog.length=200;const first=state.cafe.lastCalm!==today();if(first){state.cafe.lastCalm=today();addHearts(1);}closeSheet();toast('Olive uśmiecha się ciepło 🤍','heart');confetti();save();render();}
 /* — nastrój — */
 const MOODS=[['great','😊','spokojnie'],['good','🙂','dobrze'],['meh','😐','tak sobie'],['low','😟','trudno'],['tired','😴','zmęczona']];
 function openMood(){const scrim=document.getElementById('scrim');const btns=MOODS.map(m=>`<button class="moodbtn" data-act="pickmood" data-id="${m[0]}"><span class="me">${m[1]}</span><small>${m[2]}</small></button>`).join('');scrim.innerHTML=`<div class="sheet"><h3>Jak się dziś czujesz? 💬</h3><p class="note" style="margin:0 0 10px">Olive słucha. Możesz jej powiedzieć.</p><div class="moodrow">${btns}</div><div class="row"><button class="cancel" data-act="closesheet">Może później</button></div></div>`;scrim.classList.add('show');}
