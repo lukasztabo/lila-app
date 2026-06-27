@@ -120,7 +120,6 @@ function load(){
   const f=freshState();for(const k in f)if(state[k]===undefined)state[k]=f[k];
   PRESET_HABITS.forEach(p=>{const ex=state.habits.find(h=>h.id===p.id);if(!ex)state.habits.push(JSON.parse(JSON.stringify(p)));else{ex.name=p.name;ex.sub=p.sub;}});
   if(state.home&&!state.home.room)state.home.room='wood';
-  if(!Array.isArray(state.wokenPlaces))state.wokenPlaces=Object.keys(PLACE_WAKE).filter(id=>PLACE_WAKE[id]<=wakePct());
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(state));if(window.Cloud)window.Cloud.onLocalSave();}
 /* ===== mosty do chmury (Supabase) ===== */
@@ -132,29 +131,25 @@ const activeHabits=()=>state.habits.filter(h=>h.active);
 function getDay(d){if(!state.log[d])state.log[d]={counts:{},perfect:false,flags:{}};if(!state.log[d].flags)state.log[d].flags={};return state.log[d];}
 const countFor=(d,id)=>(state.log[d]?.counts[id])||0;
 const dailyGoal=()=>Math.min(3,Math.max(1,activeHabits().length));
-function levelInfo(lt){let need=0,lvl=1,step=60;while(lt>=need+step){need+=step;lvl++;step=Math.round(step*1.25);}return{level:lvl,pct:Math.min(100,Math.round((lt-need)/step*100))};}
+/* Poziomy — progi to SKUMULOWANE zebrane iskierki (state.lifetime). */
+const LEVELS=[0,120,300,550,850,1200,1650,2200,2900,3700];
+(function(){let g=LEVELS[LEVELS.length-1]-LEVELS[LEVELS.length-2],v=LEVELS[LEVELS.length-1];for(let i=LEVELS.length;i<40;i++){g=Math.round(g*1.18);v+=g;LEVELS.push(v);}})();
+function levelInfo(lt){let lvl=1;for(let i=1;i<LEVELS.length;i++){if(lt>=LEVELS[i])lvl=i+1;else break;}const base=LEVELS[lvl-1],nextAt=LEVELS[lvl]!=null?LEVELS[lvl]:base,span=Math.max(1,nextAt-base);return{level:lvl,base,nextAt,toNext:Math.max(0,nextAt-lt),pct:Math.min(100,Math.round((lt-base)/span*100))};}
+const PLACE_LEVEL={home:1,cafe:2,park:3,spa:4};
+const PLACE_NAME={home:'Dom',park:'Park',cafe:'Kawiarnia',spa:'Spa Lili'};
+function placeLocked(id){return levelInfo(state.lifetime).level<(PLACE_LEVEL[id]||1);}
 function displayStreak(){const s=state.streak;if(!s.lastWin)return 0;const g=daysBetween(s.lastWin,today());if(g<=1)return s.count;if(g-1<=s.freezes)return s.count;return 0;}
 function setOwned(key){return{treats:state.treatsGiven,home:state.inventory,garden:state.gardenHarvested}[key]||[];}
 function setDone(key,s){const owned={treats:s.treatsGiven,home:s.inventory,garden:s.gardenHarvested}[key]||[];return owned.length>=SETS[key].items.length;}
 
 /* ===== nagrody ===== */
-function addSparks(n){const b=levelInfo(state.lifetime).level;state.sparks+=n;state.lifetime+=n;const a=levelInfo(state.lifetime).level;if(a>b){addHearts(1);addMemory('star',`Lila urosła do poziomu ${a}!`);setTimeout(()=>{toast(`✨ Lila poz. ${a}!`,'star');confetti();},700);}}
+function addSparks(n){const b=levelInfo(state.lifetime).level;state.sparks+=n;state.lifetime+=n;const a=levelInfo(state.lifetime).level;if(a>b)onLevelUp(b,a);}
+function onLevelUp(from,to){for(let L=from+1;L<=to;L++){addMemory('star',`Lila osiągnęła poziom ${L}!`);const un=Object.keys(PLACE_LEVEL).filter(id=>PLACE_LEVEL[id]===L);const d=(L-from-1)*1700;setTimeout(()=>{toast(`✨ Poziom ${L}!`,'star');confetti();},600+d);un.forEach(id=>{addMemory('sparkles2',`${PLACE_NAME[id]} otwiera się!`);setTimeout(()=>{toast(`${PLACE_NAME[id]} otwiera się — możesz tam teraz wejść!`,'sparkles2');confetti();},1400+d);});}}
 function addHearts(n){}
 function addMemory(ic,text){state.journal.unshift({ic,text,date:today()});if(state.journal.length>80)state.journal.pop();}
 
-/* ===== Akt 1: budzące się miasteczko ===== */
-const TOWN_TARGET=1200;
-function wakePct(){return Math.min(100,Math.round(state.lifetime/TOWN_TARGET*100));}
-const TOWN_BEATS=[
-  {at:0,id:'arrive',label:'Przybycie',hearts:0,mem:'Lila przybyła do uśpionego miasteczka',toast:'Miasteczko śpi pod szarą mgłą… Twoje nawyki niosą Blask, który je obudzi 🤍'},
-  {at:20,id:'fountain',label:'Fontanna się budzi',hearts:1,mem:'Fontanna w miasteczku się obudziła',toast:'Fontanna budzi się! ✨'},
-  {at:45,id:'home',label:'Domek Lili rozświetla się',hearts:1,mem:'Domek Lili się rozświetlił',toast:'Domek Lili rozświetla się 🏡'},
-  {at:70,id:'poppy',label:'Ktoś się budzi…',hearts:1,mem:'Ktoś zaczął się budzić w miasteczku…',toast:'Ktoś porusza się w miasteczku… kto to?'},
-  {at:100,id:'festival',label:'Świetlikowy Festyn',hearts:3,mem:'Świetlikowy Festyn — całe miasteczko obudzone!',toast:'🎉 Świetlikowy Festyn! Całe miasteczko się obudziło!'}
-];
-function checkTownBeats(){const p=wakePct();let n=0;TOWN_BEATS.forEach(b=>{if(p>=b.at&&!state.townBeats.includes(b.id)){state.townBeats.push(b.id);if(b.hearts)addHearts(b.hearts);addMemory('sparkles2',b.mem);const tx=b.toast,delay=n?1500:500;setTimeout(()=>{toast(tx,'sparkles2');confetti();},delay);n++;}});if(n)save();}
 function registerWin(d){const s=state.streak;if(s.lastWin===d)return;if(!s.lastWin)s.count=1;else{const g=daysBetween(s.lastWin,d);if(g===1)s.count++;else if(g>1){const m=g-1;if(s.freezes>=m){s.freezes-=m;s.count++;toast('Lila uratowała Twoją serię','flame');}else s.count=1;}}s.lastWin=d;const wasBest=s.best;s.count>s.best&&(s.best=s.count);if(s.best>wasBest&&STREAK_HEART_MILES.includes(s.best)){addHearts(2);addMemory('flame',`Seria ${s.best} dni!`);setTimeout(()=>toast(`Seria ${s.best} dni!`,'flame'),900);}if(s.count>0&&s.count%5===0)s.freezes=Math.min(3,s.freezes+1);}
-function recompute(){const t=today(),day=getDay(t),act=activeHabits();const done=act.filter(h=>countFor(t,h.id)>=1).length;if(done>=dailyGoal()&&state.streak.lastWin!==t)registerWin(t);if(act.length>0&&done===act.length&&!day.perfect){day.perfect=true;addSparks(PERFECT_BONUS);addHearts(1);addMemory('sparkle','Idealny dzień — wszystkie nawyki zrobione!');setTimeout(()=>{toast(`Idealny dzień! +${PERFECT_BONUS} iskierek`,'sparkle');confetti();},250);}checkTownBeats();checkPlaceWakes();save();}
+function recompute(){const t=today(),day=getDay(t),act=activeHabits();const done=act.filter(h=>countFor(t,h.id)>=1).length;if(done>=dailyGoal()&&state.streak.lastWin!==t)registerWin(t);if(act.length>0&&done===act.length&&!day.perfect){day.perfect=true;addSparks(PERFECT_BONUS);addMemory('sparkle','Idealny dzień — wszystkie nawyki zrobione!');setTimeout(()=>{toast(`Idealny dzień! +${PERFECT_BONUS} iskierek`,'sparkle');confetti();},250);}save();}
 function tapHabit(h){const t=today(),day=getDay(t),cur=countFor(t,h.id);if(h.repeatable){if(cur>=6)return;day.counts[h.id]=cur+1;addSparks(h.sparks);}else{if(cur>=1){day.counts[h.id]=0;state.sparks=Math.max(0,state.sparks-h.sparks);state.lifetime=Math.max(0,state.lifetime-h.sparks);}else{day.counts[h.id]=1;addSparks(h.sparks);if(state.journal.length===0)addMemory('paw','Twój pierwszy nawyk z Lilą 🐾');}}buzz();celebratePop();maybeCelebrateVideo();recompute();render();}
 function decHabit(h){const t=today(),day=getDay(t),cur=countFor(t,h.id);if(cur<=0)return;day.counts[h.id]=cur-1;state.sparks=Math.max(0,state.sparks-h.sparks);state.lifetime=Math.max(0,state.lifetime-h.sparks);save();render();}
 
@@ -207,12 +202,12 @@ function header(){return`<div class="topbar">
     <div class="chips"><div class="chip flame">${icon('flame')}${displayStreak()}</div><div class="chip spark">${icon('sparkle')}${state.sparks}</div></div></div>`;}
 
 /* ----- Dzisiaj ----- */
-function blaskBar(){const wp=wakePct();
-  const locked=Object.keys(PLACE_WAKE).filter(id=>PLACE_WAKE[id]>0&&wp<PLACE_WAKE[id]).sort((a,b)=>PLACE_WAKE[a]-PLACE_WAKE[b]);
-  let next;
-  if(locked.length)next=`${PLACE_NAME[locked[0]]} otwiera się przy ${PLACE_WAKE[locked[0]]}%`;
-  else{const b=TOWN_BEATS.find(b=>!state.townBeats.includes(b.id));next=b?`${b.label} przy ${b.at}%`:'całe miasteczko obudzone 🎉';}
-  return`<button class="blask" data-act="nav" data-id="world"><div class="blask-top"><b>${icon('sparkles2')} Blask miasteczka</b><span>${wp}%</span></div><div class="wb"><i style="width:${wp}%"></i></div><small>Następne: ${next}</small></button>`;}
+function levelBar(){const li=levelInfo(state.lifetime);
+  const nextUnlock=Object.keys(PLACE_LEVEL).filter(id=>PLACE_LEVEL[id]===li.level+1).map(id=>PLACE_NAME[id])[0];
+  const nextTxt=li.toNext>0?`jeszcze ${li.toNext} ✦ do poziomu ${li.level+1}${nextUnlock?` — otworzy się ${nextUnlock}`:''}`:'najwyższy poziom 🎉';
+  return`<div class="blask"><div class="blask-top"><b>${icon('star')} Poziom ${li.level}</b><span>${li.pct}%</span></div><div class="wb"><i style="width:${li.pct}%"></i></div>
+    <small>${nextTxt}</small>
+    <div class="lvl-nums"><span>Zebrane łącznie: <b>${state.lifetime} ✦</b></span><span>Do wydania: <b>${state.sparks} ✦</b></span></div></div>`;}
 function viewToday(){const li=levelInfo(state.lifetime),act=activeHabits();
   const done=act.filter(h=>countFor(today(),h.id)>=1).length;
   const perfect=isPerfectToday(),pose=perfect?'celebrate':'hero';
@@ -228,7 +223,7 @@ function viewToday(){const li=levelInfo(state.lifetime),act=activeHabits();
       <div class="lila-stage">${lilaFig(pose,196)}</div>
       <div class="lila-name"><b>Lila</b><span class="lvl">Poziom ${li.level}</span><div class="xpbar"><i style="width:${li.pct}%"></i></div></div>
     </div>
-    ${blaskBar()}
+    ${levelBar()}
     <div class="sec"><h2>Dzisiaj</h2><span class="meta">${done} z ${act.length} zrobione</span></div>
     <div class="habits">${rows||emptyHabits()}</div>
     <div class="sec"><h2>Chwila dla siebie</h2></div>
@@ -237,7 +232,7 @@ function viewToday(){const li=levelInfo(state.lifetime),act=activeHabits();
 function todayRitual(){
   const woken=(typeof placeLocked==='function')&&!placeLocked('cafe');
   const teaDone=state.cafe&&state.cafe.lastCalm===today();
-  if(!woken)return`<div class="ritual locked"><div class="r-ic">🫖</div><div class="r-tx"><b>Herbatka z Olive</b><span>Otworzy się przy ${PLACE_WAKE.cafe}% Blasku</span></div><span class="r-go">${icon('lock','style="width:16px;height:16px"')}</span></div>`;
+  if(!woken)return`<div class="ritual locked"><div class="r-ic">🫖</div><div class="r-tx"><b>Herbatka z Olive</b><span>Otworzy się na poziomie ${PLACE_LEVEL.cafe}</span></div><span class="r-go">${icon('lock','style="width:16px;height:16px"')}</span></div>`;
   return`<button class="ritual ${teaDone?'done':''}" data-act="cafe-go"><div class="r-ic">🫖</div><div class="r-tx"><b>Herbatka z Olive</b><span>${teaDone?'Byłaś dziś 🤍 — możesz wpaść znowu':'Chwila spokoju — usiądź z Olive w kawiarni'}</span></div><span class="r-go">${teaDone?icon('check','style="width:18px;height:18px;color:#2F9B72"'):icon('back','style="transform:rotate(180deg);width:16px;height:16px"')}</span></button>`;
 }
 function emptyHabits(){return`<div class="banner next" style="margin:8px 0">${icon('heart')}<div>Nie masz jeszcze nawyków<small>Kliknij „Nawyki" na dole, aby wybrać</small></div></div>`;}
@@ -245,30 +240,26 @@ function cheapestLocked(){const l=[...DECOR.filter(d=>!state.inventory.includes(
 
 /* ----- Świat ----- */
 function viewWorld(){switch(state.location){case'home':return worldHome();case'furniture':return furnitureScreen();case'cafe':return cafeScreen();case'park':return worldPark();case'spa':return spaScreen();default:return worldMap();}}
-/* progi Blasku, przy których miejsca się budzą i stają dostępne */
-const PLACE_WAKE={home:0,park:6,cafe:22};
-const PLACE_NAME={home:'Dom',park:'Park',cafe:'Kawiarnia'};
-function placeLocked(id){return wakePct() < (PLACE_WAKE[id]||0);}
-function checkPlaceWakes(){const wp=wakePct();let ch=false;for(const id in PLACE_WAKE){const wa=PLACE_WAKE[id];if(wa>0&&wp>=wa&&!state.wokenPlaces.includes(id)){state.wokenPlaces.push(id);addMemory('sparkles2',`${PLACE_NAME[id]} budzi się w miasteczku!`);setTimeout(()=>{toast(`${PLACE_NAME[id]} się obudził${id==='cafe'?'a':''} — możesz tam teraz wejść!`,'sparkles2');confetti();},650);ch=true;}}if(ch)save();}
-function spot(id,label,style){const locked=placeLocked(id),wa=PLACE_WAKE[id]||0;return`<button class="spot ${locked?'locked':''}" data-act="goto" data-id="${id}" style="${style}"><span>${locked?icon('lock')+' '+wa+'%':label}</span></button>`;}
-function worldMap(){const spaUnlocked=state.places.includes('spa');const wp=wakePct();const next=TOWN_BEATS.find(b=>!state.townBeats.includes(b.id));
-  return header()+`<div class="sec"><h2>Budzące się miasteczko</h2><span class="meta">Blask budzi kolejne miejsca</span></div>
+function spot(id,label,style){const locked=placeLocked(id),lv=PLACE_LEVEL[id]||1;return`<button class="spot ${locked?'locked':''}" data-act="goto" data-id="${id}" style="${style}"><span>${locked?icon('lock')+' poz. '+lv:label}</span></button>`;}
+function worldMap(){const li=levelInfo(state.lifetime),spaOpen=!placeLocked('spa');
+  const nextUnlock=Object.keys(PLACE_LEVEL).filter(id=>PLACE_LEVEL[id]===li.level+1).map(id=>PLACE_NAME[id])[0];
+  return header()+`<div class="sec"><h2>Miasteczko Lili</h2><span class="meta">dotknij miejsca, by wejść</span></div>
     <div class="worldwrap"><div class="worldmap">
       <img class="town-map" src="assets/lila/world.png" alt="Miasteczko Lili">
       ${spot('home','Dom','left:36%;top:18%;width:30%;height:34%')}
       ${spot('cafe','Kawiarnia','left:60%;top:36%;width:31%;height:26%')}
       ${spot('park','Park','left:10%;top:60%;width:35%;height:24%')}
     </div>
-    <div class="chapter"><div class="ch-top"><b>Akt 1 · Pierwszy Blask</b><span>${wp}%</span></div>
-      <div class="wb"><i style="width:${wp}%"></i></div>
-      ${next?`<div class="ch-next">${icon('sparkles2')} Blask budzi miasteczko — następne: <b>${next.label}</b> (przy ${next.at}%)</div>`:`<div class="ch-next">${icon('trophy')} Całe miasteczko się obudziło! 🎉</div>`}
+    <div class="chapter"><div class="ch-top"><b>${icon('star')} Poziom ${li.level}</b><span>${li.toNext>0?`jeszcze ${li.toNext} ✦`:'max'}</span></div>
+      <div class="wb"><i style="width:${li.pct}%"></i></div>
+      <div class="ch-next">${icon('star')} ${nextUnlock?`Na poziomie ${li.level+1} otworzy się <b>${nextUnlock}</b>`:`Zbierasz do poziomu ${li.level+1}`}</div>
     </div></div>
-    <div class="newplace ${spaUnlocked?'done':''}" data-act="${spaUnlocked?'goto':'unlockspa'}" data-id="spa">
-      <div class="np-ic">${icon(spaUnlocked?'sparkles2':'lock')}</div>
-      <div class="np-tx"><b>Spa Lili</b><small>${spaUnlocked?'Otwarte — wpadnij na dzień relaksu':`Odblokuj za ${SPA_COST} iskierek`}</small></div>
-      <div class="np-cost">${spaUnlocked?icon('back','style="transform:rotate(180deg)"'):icon('sparkle')+SPA_COST}</div>
+    <div class="newplace ${spaOpen?'done':''}" data-act="goto" data-id="spa">
+      <div class="np-ic">${icon(spaOpen?'sparkles2':'lock')}</div>
+      <div class="np-tx"><b>Spa Lili</b><small>${spaOpen?'Otwarte — wpadnij na dzień relaksu':`Odblokuje się na poziomie ${PLACE_LEVEL.spa}`}</small></div>
+      <div class="np-cost">${spaOpen?icon('back','style="transform:rotate(180deg)"'):icon('star')+' '+PLACE_LEVEL.spa}</div>
     </div>
-    <div class="hintline">${icon('sparkle')} <b>${state.sparks}</b> iskierek</div>`;}
+    <div class="hintline">${icon('sparkle')} <b>${state.sparks}</b> iskierek do wydania</div>`;}
 function locHeader(title){return`<div class="locbar"><button class="back" data-act="backmap">${icon('back')} Miasto</button><div class="chips"><div class="chip spark">${icon('sparkle')}${state.sparks}</div></div></div><div class="sec"><h2>${title}</h2></div>`;}
 function setBar(key){const owned=setOwned(key).length,total=SETS[key].items.length;return`<div class="setbar"><span>${SETS[key].name}</span><div class="sb"><i style="width:${Math.round(owned/total*100)}%"></i></div><b>${owned}/${total}</b></div>`;}
 function furnitureScreen(){const themes=THEMES.map(t=>{const owned=state.ownedThemes.includes(t.id),active=state.theme===t.id;return`<div class="shopcard"><div class="pre"><div class="swatch" style="background:${t.wall}"></div></div><b>${t.name}</b><button class="buy ${owned?'owned':(state.sparks<t.cost?'cant':'')}" data-act="buytheme" data-id="${t.id}">${active?'Wybrany':owned?'Wybierz':icon('sparkle')+' '+t.cost}</button></div>`;}).join('');
@@ -492,7 +483,7 @@ function viewJourney(){const names=['N','Pn','Wt','Śr','Cz','Pt','So'];let cell
     <div class="stats" style="grid-template-columns:1fr 1fr"><div class="stat"><div class="n">${state.calmLog.length}</div><div class="l">Chwile spokoju 🫖</div></div><div class="stat"><div class="n">${state.gratitudeLog.length}</div><div class="l">Wdzięczności 🌿</div></div></div>
     <div class="gwrap">${grats}</div>`;
   return header()+`<div class="sec"><h2>Ten tydzień</h2></div><div class="cal">${cells}</div>
-    <div class="stats"><div class="stat"><div class="n">${displayStreak()}</div><div class="l">Seria dni${state.streak.freezes?` · ${state.streak.freezes} ❄`:''}</div></div><div class="stat"><div class="n">${state.lifetime}</div><div class="l">Zdobyte iskierki</div></div><div class="stat"><div class="n">${wakePct()}%</div><div class="l">Blask miasteczka</div></div><div class="stat"><div class="n">${state.streak.best||0}</div><div class="l">Najlepsza seria</div></div></div>
+    <div class="stats"><div class="stat"><div class="n">${displayStreak()}</div><div class="l">Seria dni${state.streak.freezes?` · ${state.streak.freezes} ❄`:''}</div></div><div class="stat"><div class="n">${state.lifetime}</div><div class="l">Zdobyte iskierki</div></div><div class="stat"><div class="n">${levelInfo(state.lifetime).level}</div><div class="l">Poziom Lili</div></div><div class="stat"><div class="n">${state.streak.best||0}</div><div class="l">Najlepsza seria</div></div></div>
     <div class="sec"><h2>Twój spokój</h2><span class="meta">z Olive 🦌</span></div>${wellbeing}
     <div class="sec"><h2>Wspomnienia</h2><span class="meta">${icon('book')}</span></div><div class="memwrap">${mems}</div>
     <div class="sec"><h2>Kolekcje</h2></div><div class="cols">${cols}</div>
@@ -513,7 +504,7 @@ function delHabit(id){state.habits=state.habits.filter(h=>h.id!==id);closeSheet(
 /* ===== zdarzenia ===== */
 function handle(a,id){switch(a){
   case'nav':state.tab=id;if(id==='world')state.location='map';render();scrollTo(0,0);break;
-  case'goto':{if(placeLocked(id)){toast(`To miejsce jeszcze śpi — obudzi się przy ${PLACE_WAKE[id]}% Blasku`,'lock');break;}state.location=id;render();scrollTo(0,0);break;}
+  case'goto':{if(placeLocked(id)){toast(`Odblokuje się na poziomie ${PLACE_LEVEL[id]}`,'lock');break;}state.location=id;render();scrollTo(0,0);break;}
   case'backmap':state.location='map';render();scrollTo(0,0);break;
   case'home-edit':state.home.edit=!state.home.edit;if(!state.home.edit)state.home.sel=null;save();render();break;
   case'home-buy':homeBuy(id);break;
@@ -532,7 +523,7 @@ function handle(a,id){switch(a){
   case'park-size':parkSelOp(o=>o.h=Math.max(0.04,Math.min(0.5,o.h+(id==='+'?0.012:-0.012))));break;
   case'park-layer':parkSelOp(o=>o.z=Math.max(0,(o.z||0)+(id==='u'?1:-1)));break;
   case'park-remove':parkRemove();break;
-  case'cafe-go':{if(placeLocked('cafe')){toast(`Kawiarnia otworzy się przy ${PLACE_WAKE.cafe}% Blasku`,'lock');break;}state.tab='world';state.location='cafe';render();scrollTo(0,0);break;}
+  case'cafe-go':{if(placeLocked('cafe')){toast(`Kawiarnia otworzy się na poziomie ${PLACE_LEVEL.cafe}`,'lock');break;}state.tab='world';state.location='cafe';render();scrollTo(0,0);break;}
   case'cafe-tea':startBreath(180);break;
   case'cafe-quick':startBreath(60);break;
   case'cafe-gratitude':openGratitude();break;
@@ -566,7 +557,6 @@ document.addEventListener('click',e=>{if(e.target.id==='scrim')closeSheet();});
 /* ===== start ===== */
 load();
 if(!localStorage.getItem(KEY))save();
-checkTownBeats();
 render();
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});

@@ -372,3 +372,7 @@ img{display:block;-webkit-user-drag:none;user-select:none}
 .gitem svg{width:16px;height:16px;color:var(--mint-deep);flex-shrink:0}
 .gitem span{flex:1;font-weight:700;font-size:13.5px}
 .gitem small{font-size:11px;color:var(--ink-faint);font-weight:700;flex-shrink:0}
+
+/* dwie liczby pod paskiem poziomu */
+.lvl-nums{display:flex;justify-content:space-between;margin-top:8px;font-size:11.5px;color:var(--ink-soft);font-weight:700}
+.lvl-nums b{color:var(--lav-deep)}
