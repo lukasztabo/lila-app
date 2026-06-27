@@ -471,7 +471,6 @@ function spaScreen(){const day=getDay(today());const spaDone=day.flags.spa;
 function viewJourney(){const names=['N','Pn','Wt','Śr','Cz','Pt','So'];let cells='';
   for(let i=6;i>=0;i--){const d=shiftDay(today(),-i),day=state.log[d];const act=activeHabits().length;const score=day?Object.values(day.counts).filter(n=>n>=1).length:0;const win=day&&score>=Math.min(3,Math.max(1,act));const dt=new Date(d+'T00:00:00');cells+=`<div class="d"><small>${names[dt.getDay()]}</small><div class="dot ${win?'win':''} ${i===0?'today':''}">${win?icon('check'):dt.getDate()}</div></div>`;}
   const li=levelInfo(state.lifetime);
-  const cols=Object.keys(SETS).map(k=>{const o=setOwned(k).length,t=SETS[k].items.length;return`<div class="colrow"><span>${SETS[k].name}</span><div class="sb"><i style="width:${Math.round(o/t*100)}%"></i></div><b>${o}/${t}</b></div>`;}).join('');
   const mems=state.journal.length?state.journal.slice(0,18).map(m=>`<div class="mem"><div class="mem-ic">${icon(m.ic)}</div><div class="mem-tx"><b>${esc(m.text)}</b><small>${relDay(m.date)}</small></div></div>`).join(''):`<p class="note">Twoje wspomnienia z Lilą pojawią się tutaj 🤍</p>`;
   const badges=BADGES.map(b=>{const got=b.test(state),t=TINT[b.color];return`<div class="badge ${got?'':'locked'}"><div class="em" style="background:${got?t.bg:'#EFE5DE'};color:${got?t.fg:'#B7A6AE'}">${icon(got?b.icon:'lock')}</div><small>${b.name}</small></div>`;}).join('');
   const moodEmoji={great:'😊',good:'🙂',meh:'😐',low:'😟',tired:'😴'};
@@ -484,7 +483,6 @@ function viewJourney(){const names=['N','Pn','Wt','Śr','Cz','Pt','So'];let cell
     <div class="stats"><div class="stat"><div class="n">${displayStreak()}</div><div class="l">Seria dni${state.streak.freezes?` · ${state.streak.freezes} ❄`:''}</div></div><div class="stat"><div class="n">${state.lifetime}</div><div class="l">Zdobyte iskierki</div></div><div class="stat"><div class="n">${levelInfo(state.lifetime).level}</div><div class="l">Poziom Lili</div></div><div class="stat"><div class="n">${state.streak.best||0}</div><div class="l">Najlepsza seria</div></div></div>
     <div class="sec"><h2>Twój spokój</h2><span class="meta">z Olive 🦌</span></div>${wellbeing}
     <div class="sec"><h2>Wspomnienia</h2><span class="meta">${icon('book')}</span></div><div class="memwrap">${mems}</div>
-    <div class="sec"><h2>Kolekcje</h2></div><div class="cols">${cols}</div>
     <div class="sec"><h2>Odznaki</h2><span class="meta">Lila poz. ${li.level}</span></div><div class="badges">${badges}</div><div style="height:8px"></div>`;}
 
 /* ----- Nawyki ----- */
