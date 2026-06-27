@@ -35,7 +35,7 @@ const TINT={pink:{bg:'#FCE7EF',fg:'#D9608A'},lav:{bg:'#EEE7FA',fg:'#7E63C4'},min
 const PRESET_HABITS=[
   {id:'walk',name:'Spacer po posiłku',sub:'Mały spacerek po jedzeniu',icon:'walk',color:'mint',sparks:12,repeatable:true,active:true,builtin:true},
   {id:'sweets',name:'Słodko-mądry dzień',sub:'Dzień bez słodyczy',icon:'apple',color:'pink',sparks:12,repeatable:false,active:true,builtin:true},
-  {id:'veg',name:'Tęczowy talerz',sub:'Dodaj warzywa lub owoce',icon:'leaf',color:'green',sparks:10,repeatable:true,active:true,builtin:true},
+  {id:'veg',name:'Tęczowy talerz',sub:'Dodaj warzywa lub owoce',icon:'leaf',color:'green',sparks:10,repeatable:false,active:true,builtin:true},
   {id:'breakfast',name:'Poranna moc',sub:'Śniadanie z białkiem',icon:'sun',color:'amber',sparks:10,repeatable:false,active:true,builtin:true},
   {id:'energy',name:'Energia',sub:'Rusz się i baw się dobrze',icon:'bolt',color:'lav',sparks:12,repeatable:false,active:true,builtin:true},
   {id:'order',name:'Warzywa na start',sub:'Warzywa i białko przed resztą',icon:'leaf',color:'green',sparks:8,repeatable:false,active:true,builtin:true},
@@ -118,7 +118,7 @@ function freshState(){return{v:4,name:'przyjaciółko',createdAt:today(),sparks:
 function load(){
   try{const r=localStorage.getItem(KEY);state=r?JSON.parse(r):freshState();}catch(e){state=freshState();}
   const f=freshState();for(const k in f)if(state[k]===undefined)state[k]=f[k];
-  PRESET_HABITS.forEach(p=>{const ex=state.habits.find(h=>h.id===p.id);if(!ex)state.habits.push(JSON.parse(JSON.stringify(p)));else{ex.name=p.name;ex.sub=p.sub;}});
+  PRESET_HABITS.forEach(p=>{const ex=state.habits.find(h=>h.id===p.id);if(!ex)state.habits.push(JSON.parse(JSON.stringify(p)));else{ex.name=p.name;ex.sub=p.sub;ex.repeatable=p.repeatable;}});
   if(state.home&&!state.home.room)state.home.room='wood';
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(state));if(window.Cloud)window.Cloud.onLocalSave();}
