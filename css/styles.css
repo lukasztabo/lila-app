@@ -353,3 +353,7 @@ img{display:block;-webkit-user-drag:none;user-select:none}
 .breath-prog-i{height:100%;width:0;background:linear-gradient(90deg,var(--lav),var(--pink));border-radius:6px}
 .breath-close{position:absolute;bottom:38px;z-index:2;background:#fff;color:var(--lav-deep);font-weight:800;font-family:inherit;border-radius:16px;padding:11px 26px;box-shadow:0 4px 14px rgba(120,90,140,.25)}
 @keyframes breathe{0%{transform:scale(.6)}33.3%{transform:scale(1)}50%{transform:scale(1)}100%{transform:scale(.6)}}
+
+/* rytuał dnia na ekranie Dzisiaj */
+.ritual.done{background:var(--mint-bg);border-color:#BFE6D2}
+.ritual.locked{opacity:.6}

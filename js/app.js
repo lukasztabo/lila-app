@@ -225,7 +225,15 @@ function viewToday(){const li=levelInfo(state.lifetime),act=activeHabits();
     </div>
     <div class="sec"><h2>Dzisiaj</h2><span class="meta">${done} z ${act.length} zrobione</span></div>
     <div class="habits">${rows||emptyHabits()}</div>
+    <div class="sec"><h2>Chwila dla siebie</h2></div>
+    <div class="rituals" style="padding-top:2px">${todayRitual()}</div>
     ${banner}`;}
+function todayRitual(){
+  const woken=(typeof placeLocked==='function')&&!placeLocked('cafe');
+  const teaDone=state.cafe&&state.cafe.lastCalm===today();
+  if(!woken)return`<div class="ritual locked"><div class="r-ic">🫖</div><div class="r-tx"><b>Herbatka z Olive</b><span>Otworzy się przy ${PLACE_WAKE.cafe}% Blasku</span></div><span class="r-go">${icon('lock','style="width:16px;height:16px"')}</span></div>`;
+  return`<button class="ritual ${teaDone?'done':''}" data-act="cafe-go"><div class="r-ic">🫖</div><div class="r-tx"><b>Herbatka z Olive</b><span>${teaDone?'Byłaś dziś 🤍 — możesz wpaść znowu':'Chwila spokoju — usiądź z Olive w kawiarni'}</span></div><span class="r-go">${teaDone?icon('check','style="width:18px;height:18px;color:#2F9B72"'):icon('back','style="transform:rotate(180deg);width:16px;height:16px"')}</span></button>`;
+}
 function emptyHabits(){return`<div class="banner next" style="margin:8px 0">${icon('heart')}<div>Nie masz jeszcze nawyków<small>Kliknij „Nawyki" na dole, aby wybrać</small></div></div>`;}
 function cheapestLocked(){const l=[...DECOR.filter(d=>!state.inventory.includes(d.id)),...THEMES.filter(t=>!state.ownedThemes.includes(t.id)),...TREATS.filter(t=>!state.treatsGiven.includes(t.id))].sort((a,b)=>a.cost-b.cost);return l[0];}
 
@@ -510,6 +518,7 @@ function handle(a,id){switch(a){
   case'park-size':parkSelOp(o=>o.h=Math.max(0.04,Math.min(0.5,o.h+(id==='+'?0.012:-0.012))));break;
   case'park-layer':parkSelOp(o=>o.z=Math.max(0,(o.z||0)+(id==='u'?1:-1)));break;
   case'park-remove':parkRemove();break;
+  case'cafe-go':{if(placeLocked('cafe')){toast(`Kawiarnia otworzy się przy ${PLACE_WAKE.cafe}% Blasku`,'lock');break;}state.tab='world';state.location='cafe';render();scrollTo(0,0);break;}
   case'cafe-tea':startBreath(180);break;
   case'cafe-quick':startBreath(60);break;
   case'cafe-gratitude':openGratitude();break;
