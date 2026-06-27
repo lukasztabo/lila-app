@@ -313,3 +313,6 @@ img{display:block;-webkit-user-drag:none;user-select:none}
 .pobj.sel{outline:2.5px dashed #5cc8ff;outline-offset:1px}
 .dcard.on{border-color:var(--mint-deep);background:var(--mint-bg)}
 .dcard.on small{color:var(--mint-deep)}
+
+/* mapa zawsze jasna (bez przygaszania), strefy gatuje kłódka */
+.worldmap .town-map{position:relative;z-index:0;width:100%;display:block}

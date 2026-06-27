@@ -242,8 +242,7 @@ function spot(id,label,style){const locked=placeLocked(id),wa=PLACE_WAKE[id]||0;
 function worldMap(){const spaUnlocked=state.places.includes('spa');const wp=wakePct();const next=TOWN_BEATS.find(b=>!state.townBeats.includes(b.id));
   return header()+`<div class="sec"><h2>Budzące się miasteczko</h2><span class="meta">Blask budzi kolejne miejsca</span></div>
     <div class="worldwrap"><div class="worldmap">
-      <img class="town-asleep" src="assets/lila/world_asleep.png" alt="">
-      <img class="town-awake" src="assets/lila/world.png" alt="Miasteczko Lili" style="opacity:${wp/100}">
+      <img class="town-map" src="assets/lila/world.png" alt="Miasteczko Lili">
       ${spot('home','Dom','left:36%;top:18%;width:30%;height:34%')}
       ${spot('cafe','Kawiarnia','left:60%;top:36%;width:31%;height:26%')}
       ${spot('park','Park','left:10%;top:60%;width:35%;height:24%')}
