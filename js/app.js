@@ -109,7 +109,7 @@ function freshState(){return{v:4,name:'przyjaciółko',createdAt:today(),sparks:
   habits:JSON.parse(JSON.stringify(PRESET_HABITS)),log:{},
   ownedThemes:['cream'],theme:'cream',inventory:[],
   treatsGiven:[],garden:[null,null,null],gardenHarvested:[],
-  places:['home','furniture','cafe','park'],journal:[],townBeats:[],
+  places:['home','cafe','park'],journal:[],townBeats:[],wokenPlaces:[],
   home:{owned:['bed','rug','dog_bed'],edit:false,sel:null,room:'wood',layout:{
     rug:{x:0.50,y:0.72,h:0.16,z:0,fx:false,rot:0},
     bed:{x:0.30,y:0.54,h:0.26,z:2,fx:false,rot:0},
@@ -120,6 +120,7 @@ function load(){
   const f=freshState();for(const k in f)if(state[k]===undefined)state[k]=f[k];
   PRESET_HABITS.forEach(p=>{const ex=state.habits.find(h=>h.id===p.id);if(!ex)state.habits.push(JSON.parse(JSON.stringify(p)));else{ex.name=p.name;ex.sub=p.sub;}});
   if(state.home&&!state.home.room)state.home.room='wood';
+  if(!Array.isArray(state.wokenPlaces))state.wokenPlaces=Object.keys(PLACE_WAKE).filter(id=>PLACE_WAKE[id]<=wakePct());
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(state));if(window.Cloud)window.Cloud.onLocalSave();}
 /* ===== mosty do chmury (Supabase) ===== */
@@ -153,7 +154,7 @@ const TOWN_BEATS=[
 ];
 function checkTownBeats(){const p=wakePct();let n=0;TOWN_BEATS.forEach(b=>{if(p>=b.at&&!state.townBeats.includes(b.id)){state.townBeats.push(b.id);if(b.hearts)addHearts(b.hearts);addMemory('sparkles2',b.mem);const tx=b.toast,delay=n?1500:500;setTimeout(()=>{toast(tx,'sparkles2');confetti();},delay);n++;}});if(n)save();}
 function registerWin(d){const s=state.streak;if(s.lastWin===d)return;if(!s.lastWin)s.count=1;else{const g=daysBetween(s.lastWin,d);if(g===1)s.count++;else if(g>1){const m=g-1;if(s.freezes>=m){s.freezes-=m;s.count++;toast('Lila uratowała Twoją serię','flame');}else s.count=1;}}s.lastWin=d;const wasBest=s.best;s.count>s.best&&(s.best=s.count);if(s.best>wasBest&&STREAK_HEART_MILES.includes(s.best)){addHearts(2);addMemory('flame',`Seria ${s.best} dni! +2 serduszka`);setTimeout(()=>toast(`Seria ${s.best} dni! +2 serduszka`,'flame'),900);}if(s.count>0&&s.count%5===0)s.freezes=Math.min(3,s.freezes+1);}
-function recompute(){const t=today(),day=getDay(t),act=activeHabits();const done=act.filter(h=>countFor(t,h.id)>=1).length;if(done>=dailyGoal()&&state.streak.lastWin!==t)registerWin(t);if(act.length>0&&done===act.length&&!day.perfect){day.perfect=true;addSparks(PERFECT_BONUS);addHearts(1);addMemory('sparkle','Idealny dzień — wszystkie nawyki zrobione!');setTimeout(()=>{toast(`Idealny dzień! +${PERFECT_BONUS} iskierek +1 serduszko`,'sparkle');confetti();},250);}checkTownBeats();save();}
+function recompute(){const t=today(),day=getDay(t),act=activeHabits();const done=act.filter(h=>countFor(t,h.id)>=1).length;if(done>=dailyGoal()&&state.streak.lastWin!==t)registerWin(t);if(act.length>0&&done===act.length&&!day.perfect){day.perfect=true;addSparks(PERFECT_BONUS);addHearts(1);addMemory('sparkle','Idealny dzień — wszystkie nawyki zrobione!');setTimeout(()=>{toast(`Idealny dzień! +${PERFECT_BONUS} iskierek +1 serduszko`,'sparkle');confetti();},250);}checkTownBeats();checkPlaceWakes();save();}
 function tapHabit(h){const t=today(),day=getDay(t),cur=countFor(t,h.id);if(h.repeatable){if(cur>=6)return;day.counts[h.id]=cur+1;addSparks(h.sparks);}else{if(cur>=1){day.counts[h.id]=0;state.sparks=Math.max(0,state.sparks-h.sparks);state.lifetime=Math.max(0,state.lifetime-h.sparks);}else{day.counts[h.id]=1;addSparks(h.sparks);if(state.journal.length===0)addMemory('paw','Twój pierwszy nawyk z Lilą 🐾');}}buzz();celebratePop();maybeCelebrateVideo();recompute();render();}
 function decHabit(h){const t=today(),day=getDay(t),cur=countFor(t,h.id);if(cur<=0)return;day.counts[h.id]=cur-1;state.sparks=Math.max(0,state.sparks-h.sparks);state.lifetime=Math.max(0,state.lifetime-h.sparks);save();render();}
 
@@ -230,15 +231,19 @@ function cheapestLocked(){const l=[...DECOR.filter(d=>!state.inventory.includes(
 
 /* ----- Świat ----- */
 function viewWorld(){switch(state.location){case'home':return worldHome();case'furniture':return furnitureScreen();case'cafe':return cafeScreen();case'park':return worldPark();case'spa':return spaScreen();default:return worldMap();}}
-function spot(id,label,style){return`<button class="spot" data-act="goto" data-id="${id}" style="${style}"><span>${label}</span></button>`;}
+/* progi Blasku, przy których miejsca się budzą i stają dostępne */
+const PLACE_WAKE={home:0,park:6,cafe:22};
+const PLACE_NAME={home:'Dom',park:'Park',cafe:'Kawiarnia'};
+function placeLocked(id){return wakePct() < (PLACE_WAKE[id]||0);}
+function checkPlaceWakes(){const wp=wakePct();let ch=false;for(const id in PLACE_WAKE){const wa=PLACE_WAKE[id];if(wa>0&&wp>=wa&&!state.wokenPlaces.includes(id)){state.wokenPlaces.push(id);addMemory('sparkles2',`${PLACE_NAME[id]} budzi się w miasteczku!`);setTimeout(()=>{toast(`${PLACE_NAME[id]} się obudził${id==='cafe'?'a':''} — możesz tam teraz wejść!`,'sparkles2');confetti();},650);ch=true;}}if(ch)save();}
+function spot(id,label,style){const locked=placeLocked(id),wa=PLACE_WAKE[id]||0;return`<button class="spot ${locked?'locked':''}" data-act="goto" data-id="${id}" style="${style}"><span>${locked?icon('lock')+' '+wa+'%':label}</span></button>`;}
 function worldMap(){const spaUnlocked=state.places.includes('spa');const wp=wakePct();const next=TOWN_BEATS.find(b=>!state.townBeats.includes(b.id));
-  return header()+`<div class="sec"><h2>Budzące się miasteczko</h2><span class="meta">dotknij miejsca, by je odwiedzić</span></div>
+  return header()+`<div class="sec"><h2>Budzące się miasteczko</h2><span class="meta">Blask budzi kolejne miejsca</span></div>
     <div class="worldwrap"><div class="worldmap">
       <img class="town-asleep" src="assets/lila/world_asleep.png" alt="">
       <img class="town-awake" src="assets/lila/world.png" alt="Miasteczko Lili" style="opacity:${wp/100}">
       ${spot('home','Dom','left:36%;top:18%;width:30%;height:34%')}
       ${spot('cafe','Kawiarnia','left:60%;top:36%;width:31%;height:26%')}
-      ${spot('furniture','Meble','left:36%;top:54%;width:30%;height:16%')}
       ${spot('park','Park','left:10%;top:60%;width:35%;height:24%')}
     </div>
     <div class="chapter"><div class="ch-top"><b>Akt 1 · Pierwszy Blask</b><span>${wp}%</span></div>
@@ -382,7 +387,7 @@ function delHabit(id){state.habits=state.habits.filter(h=>h.id!==id);closeSheet(
 /* ===== zdarzenia ===== */
 function handle(a,id){switch(a){
   case'nav':state.tab=id;if(id==='world')state.location='map';render();scrollTo(0,0);break;
-  case'goto':state.location=id;render();scrollTo(0,0);break;
+  case'goto':{if(placeLocked(id)){toast(`To miejsce jeszcze śpi — obudzi się przy ${PLACE_WAKE[id]}% Blasku`,'lock');break;}state.location=id;render();scrollTo(0,0);break;}
   case'backmap':state.location='map';render();scrollTo(0,0);break;
   case'home-edit':state.home.edit=!state.home.edit;if(!state.home.edit)state.home.sel=null;save();render();break;
   case'home-buy':homeBuy(id);break;

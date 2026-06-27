@@ -299,3 +299,7 @@ img{display:block;-webkit-user-drag:none;user-select:none}
 .froom small{display:block;font-size:11px;font-weight:800;color:var(--ink-soft);padding:4px 2px}
 .froom.on{border-color:var(--pink)}
 .froom.on small{color:var(--pink-deep)}
+
+/* miejsce zablokowane (jeszcze śpi) */
+.spot.locked span{background:rgba(120,110,125,.82);color:#fff;display:flex;align-items:center;gap:3px}
+.spot.locked span svg{width:11px;height:11px}
