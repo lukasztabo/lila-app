@@ -286,9 +286,11 @@ img{display:block;-webkit-user-drag:none;user-select:none}
 .furni{position:absolute;transform-origin:bottom center;-webkit-user-drag:none;user-select:none}
 .droom.editing .furni{cursor:grab}
 .furni.sel{outline:2.5px dashed #5cc8ff;outline-offset:1px}
-.dtools{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:12px 0 4px}
-.dtools.dim{opacity:.4;pointer-events:none}
-.dtools button{width:46px;height:42px;border-radius:13px;border:1.5px solid var(--line);background:#fff;font-size:18px;font-weight:800;color:var(--ink);display:flex;align-items:center;justify-content:center;font-family:inherit}
+.dtools{display:flex;gap:9px;justify-content:center;margin:12px 0 2px;overflow-x:auto;padding:0 8px 4px}
+.tgrp{display:flex;flex-direction:column;align-items:center;gap:4px;flex:0 0 auto}
+.tgrp .tbtns{display:flex;gap:4px}
+.tgrp>small{font-size:10px;font-weight:800;color:var(--ink-soft)}
+.dtools button{width:38px;height:38px;border-radius:11px;border:1.5px solid var(--line);background:#fff;font-size:17px;font-weight:800;color:var(--ink);display:flex;align-items:center;justify-content:center;font-family:inherit}
 .dtools button:active{background:#eef6ff}
 .dtools button.del{color:var(--pink-deep);border-color:#F2A0BC}
 .ddrawer{margin-top:8px}
@@ -321,6 +323,20 @@ img{display:block;-webkit-user-drag:none;user-select:none}
 .pobj.sel{outline:2.5px dashed #5cc8ff;outline-offset:1px}
 .dcard.on{border-color:var(--mint-deep);background:var(--mint-bg)}
 .dcard.on small{color:var(--mint-deep)}
+.dcard.cant{opacity:.5}
+.dtop.editing{justify-content:space-between}
+.addfurn{background:var(--lav-bg);color:var(--lav-deep);border:1.5px solid #DDD0F3;border-radius:14px;padding:10px 16px;font-weight:800;font-family:inherit;font-size:14px;display:flex;align-items:center;gap:6px}
+.addfurn svg{width:16px;height:16px}
+.sheet.homeshop{max-height:82vh;overflow-y:auto}
+.sheet.homeshop h3{margin-bottom:12px}
+.hstabs{display:flex;gap:8px;margin-bottom:14px}
+.hstab{flex:1;padding:10px;border-radius:13px;border:1.5px solid var(--line);background:#fff;font-weight:800;font-family:inherit;font-size:14px;color:var(--ink-soft)}
+.hstab.on{background:var(--pink);color:#fff;border-color:var(--pink)}
+.shopgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.shopgrid .dcard{width:auto}
+.froomgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.froomgrid .froom{width:auto}
+.froomgrid .froom img{height:84px}
 
 /* mapa zawsze jasna (bez przygaszania), strefy gatuje kłódka */
 .worldmap .town-map{position:relative;z-index:0;width:100%;display:block}

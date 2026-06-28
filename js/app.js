@@ -407,9 +407,26 @@ const FURN_LIST=[
 const FURN=Object.fromEntries(FURN_LIST.map(f=>[f.id,f]));
 function homeTopZ(){const L=state.home.layout;let m=0;for(const k in L)m=Math.max(m,L[k].z||0);return m;}
 function homePlace(id){const f=FURN[id];if(!f)return;state.home.layout[id]={x:0.5,y:f.wall?0.30:0.62,h:f.defH,z:homeTopZ()+1,fx:false,rot:0};state.home.sel=id;}
-function homeBuy(id){const f=FURN[id];if(!f)return;if(state.home.owned.includes(id)){homePlace(id);save();render();return;}if(!spend(f.cost))return;state.home.owned.push(id);homePlace(id);addMemory('home',`Do domu Mili trafił/a: ${f.name.toLowerCase()}`);toast(`Kupiono: ${f.name.toLowerCase()}! Przeciągnij gdzie chcesz`,'gift');buzz();confetti();save();render();}
+function homeBuy(id){const f=FURN[id];if(!f)return false;if(state.home.owned.includes(id)){homePlace(id);save();render();return true;}if(!spend(f.cost))return false;state.home.owned.push(id);homePlace(id);addMemory('home',`Do domu Mili trafił/a: ${f.name.toLowerCase()}`);toast(`Kupiono: ${f.name.toLowerCase()}! Przeciągnij gdzie chcesz`,'gift');buzz();confetti();save();render();return true;}
 function homeRemove(){const id=state.home.sel;if(!id)return;delete state.home.layout[id];state.home.sel=null;save();render();}
 function homeSelOp(fn){const id=state.home.sel,p=id&&state.home.layout[id];if(!p)return;fn(p);save();render();}
+let homeShopTab='furn';
+function openHomeShop(){const H=state.home,L=H.layout;
+  const tab=(id,label)=>`<button class="hstab ${homeShopTab===id?'on':''}" data-act="hshop-tab" data-id="${id}">${label}</button>`;
+  let body;
+  if(homeShopTab==='floor'){
+    const ROOMS=[['wood','Drewno'],['palewood','Jasne drewno'],['tiles','Kafelki'],['carpet','Dywan']];
+    body=`<div class="froomgrid">${ROOMS.map(([id,name])=>`<button class="froom ${(H.room||'wood')===id?'on':''}" data-act="hshop-room" data-id="${id}"><img src="assets/home/room_${id}.png"><small>${name}</small></button>`).join('')}</div>`;
+  }else{
+    body=`<div class="shopgrid">${FURN_LIST.map(f=>{const owned=H.owned.includes(f.id),placed=!!L[f.id];const label=owned?(placed?'Postawione':'Postaw'):icon('sparkle')+' '+f.cost;const can=owned||state.sparks>=f.cost;return`<button class="dcard ${placed?'on':''} ${can?'':'cant'}" data-act="hshop-add" data-id="${f.id}"><img src="assets/home/${f.id}.png"><b>${esc(f.name)}</b><small>${label}</small></button>`;}).join('')}</div>`;
+  }
+  const scrim=document.getElementById('scrim');
+  scrim.innerHTML=`<div class="sheet homeshop"><h3>Dodaj do pokoju</h3><div class="hstabs">${tab('furn','Meble')}${tab('floor','Podłoga')}</div>${body}<div class="row"><button class="cancel" data-act="closesheet">Zamknij</button></div></div>`;
+  scrim.classList.add('show');}
+function homeShopAdd(id){const H=state.home,owned=H.owned.includes(id),placed=!!H.layout[id];
+  if(owned&&placed){H.sel=id;closeSheet();save();render();return;}
+  if(owned){homePlace(id);closeSheet();save();render();return;}
+  if(homeBuy(id))closeSheet();}
 function worldHome(){const H=state.home,L=H.layout;
   const ids=Object.keys(L).sort((a,b)=>(L[a].z||0)-(L[b].z||0));
   const pieces=ids.map(id=>{const p=L[id],f=FURN[id];if(!f)return'';const sel=H.edit&&H.sel===id;
@@ -418,34 +435,20 @@ function worldHome(){const H=state.home,L=H.layout;
   const room=`<div class="droom ${H.edit?'editing':''}" id="droom"><img class="droom-bg" src="assets/home/room_${H.room||'wood'}.png" draggable="false">${pieces}</div>`;
   const editBtn=`<button class="editbtn ${H.edit?'on':''}" data-act="home-edit">${icon(H.edit?'check':'pencil')} ${H.edit?'Gotowe':'Urządzaj'}</button>`;
   let toolbar='';
-  if(H.edit){const has=H.sel&&L[H.sel];
-    toolbar=`<div class="dtools ${has?'':'dim'}">
-      <button data-act="home-rot" data-id="l">↺</button>
-      <button data-act="home-rot" data-id="r">↻</button>
-      <button data-act="home-flip">⇋</button>
-      <button data-act="home-size" data-id="-">−</button>
-      <button data-act="home-size" data-id="+">+</button>
-      <button data-act="home-layer" data-id="d">↧</button>
-      <button data-act="home-layer" data-id="u">↥</button>
-      <button data-act="home-remove" class="del">✕</button>
+  if(H.edit && H.sel && L[H.sel]){
+    toolbar=`<div class="dtools">
+      <div class="tgrp"><div class="tbtns"><button data-act="home-rot" data-id="l">↺</button><button data-act="home-rot" data-id="r">↻</button></div><small>Obróć</small></div>
+      <div class="tgrp"><div class="tbtns"><button data-act="home-flip">⇄</button></div><small>Odbij</small></div>
+      <div class="tgrp"><div class="tbtns"><button data-act="home-size" data-id="-">−</button><button data-act="home-size" data-id="+">+</button></div><small>Rozmiar</small></div>
+      <div class="tgrp"><div class="tbtns"><button data-act="home-layer" data-id="d">↧</button><button data-act="home-layer" data-id="u">↥</button></div><small>Warstwa</small></div>
+      <div class="tgrp"><div class="tbtns"><button data-act="home-remove" class="del">🗑</button></div><small>Usuń</small></div>
     </div>`;}
-  let drawer='';
-  if(H.edit){
-    const placed=new Set(Object.keys(L));
-    const ownedNot=state.home.owned.filter(id=>!placed.has(id)).map(id=>FURN[id]).filter(Boolean);
-    const shop=FURN_LIST.filter(f=>!state.home.owned.includes(f.id));
-    const card=(f,act,label)=>`<button class="dcard" data-act="${act}" data-id="${f.id}"><img src="assets/home/${f.id}.png"><b>${esc(f.name)}</b><small>${label}</small></button>`;
-    const ROOMS=[['wood','Drewno'],['palewood','Jasne drewno'],['tiles','Kafelki'],['carpet','Dywan']];
-    const rooms=ROOMS.map(([id,name])=>`<button class="froom ${(H.room||'wood')===id?'on':''}" data-act="home-room" data-id="${id}"><img src="assets/home/room_${id}.png"><small>${name}</small></button>`).join('');
-    drawer=`<div class="ddrawer">
-      <div class="dlab">Podłoga / styl pokoju</div><div class="drow">${rooms}</div>
-      ${ownedNot.length?`<div class="dlab">Twoje meble — dotknij, by postawić</div><div class="drow">${ownedNot.map(f=>card(f,'home-place','postaw')).join('')}</div>`:''}
-      <div class="dlab">Sklep — kup za iskierki</div>
-      <div class="drow">${shop.map(f=>card(f,'home-buy',icon('sparkle')+' '+f.cost)).join('')||'<small style="color:#9a8a7a;padding:8px">Masz już wszystko 🎉</small>'}</div>
-    </div>`;}
-  return locHeader('Dom Mili')+`<div class="dtop">${editBtn}</div>
-    <div class="droom-wrap">${room}</div>${toolbar}${drawer}
-    ${H.edit?'':`<div class="hintline">${icon('home')} Dotknij „Urządzaj", by przesuwać meble i kupować nowe</div>`}<div style="height:8px"></div>`;}
+  const dtop=H.edit
+    ? `<div class="dtop editing"><button class="addfurn" data-act="home-shop">${icon('plus')} Dodaj rzecz</button>${editBtn}</div>`
+    : `<div class="dtop">${editBtn}</div>`;
+  return locHeader('Dom Mili')+dtop+`
+    <div class="droom-wrap">${room}</div>${toolbar}
+    <div class="hintline">${icon('home')} ${H.edit?'Dotknij mebla, by go przesunąć · „Dodaj rzecz", by kupić i postawić nowe':'Dotknij „Urządzaj", by przesuwać meble i kupować nowe'}</div><div style="height:8px"></div>`;}
 function initHomeScreen(){
   if(!(state.tab==='world'&&state.location==='home'&&state.home.edit))return;
   const room=document.getElementById('droom');if(!room)return;
@@ -582,6 +585,10 @@ function handle(a,id){switch(a){
   case'home-size':homeSelOp(p=>p.h=Math.max(0.05,Math.min(0.6,p.h+(id==='+'?0.015:-0.015))));break;
   case'home-layer':homeSelOp(p=>p.z=Math.max(0,(p.z||0)+(id==='u'?1:-1)));break;
   case'home-room':state.home.room=id;save();render();break;
+  case'home-shop':homeShopTab='furn';openHomeShop();break;
+  case'hshop-tab':homeShopTab=id;openHomeShop();break;
+  case'hshop-add':homeShopAdd(id);break;
+  case'hshop-room':state.home.room=id;save();render();homeShopTab='floor';openHomeShop();break;
   case'park-edit':state.park.edit=!state.park.edit;if(!state.park.edit){state.park.sel=null;state.park.tool=null;}save();render();break;
   case'park-tile':parkBuyTile(id);break;
   case'park-prop':parkBuyProp(id);break;
