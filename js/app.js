@@ -104,7 +104,7 @@ function relDay(ds){const n=daysBetween(ds,today());return n===0?'dzisiaj':n===1
 /* ===== stan ===== */
 const KEY='lila.v1';
 let state;
-function freshState(){return{v:4,name:'przyjaciółko',createdAt:today(),sparks:0,lifetime:0,hearts:0,
+function freshState(){return{v:4,name:'przyjaciółko',createdAt:today(),sparks:0,lifetime:0,hearts:0,maxLevel:1,
   streak:{count:0,best:0,lastWin:null,freezes:1},
   habits:JSON.parse(JSON.stringify(PRESET_HABITS)),log:{},
   ownedThemes:['cream'],theme:'cream',inventory:[],
@@ -115,8 +115,16 @@ function freshState(){return{v:4,name:'przyjaciółko',createdAt:today(),sparks:
     grid:[['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth'],['earth','earth','earth','earth','earth']]},
   moodLog:[],gratitudeLog:[],calmLog:[],cafe:{lastCalm:null},
   tab:'today',location:'map'};}
+// jednorazowa migracja: utrzymaj poziom zdobyty na STAREJ krzywej, by zmiana progów nikogo nie cofnęła (zasada: nic nie tracisz)
+function migrateMaxLevel(s){
+  if(!s||s.maxLevel!==undefined)return;
+  const OLD=[0,120,300,550,850,1200,1650,2200,2900,3700];let ol=1;
+  for(let i=1;i<OLD.length;i++){if((s.lifetime||0)>=OLD[i])ol=i+1;else break;}
+  s.maxLevel=ol;
+}
 function load(){
   try{const r=localStorage.getItem(KEY);state=r?JSON.parse(r):freshState();}catch(e){state=freshState();}
+  migrateMaxLevel(state);
   const f=freshState();for(const k in f)if(state[k]===undefined)state[k]=f[k];
   PRESET_HABITS.forEach(p=>{const ex=state.habits.find(h=>h.id===p.id);if(!ex)state.habits.push(JSON.parse(JSON.stringify(p)));else{ex.name=p.name;ex.sub=p.sub;ex.repeatable=p.repeatable;}});
   if(state.home&&!state.home.room)state.home.room='wood';
@@ -124,7 +132,7 @@ function load(){
 function save(){localStorage.setItem(KEY,JSON.stringify(state));if(window.Cloud)window.Cloud.onLocalSave();}
 /* ===== mosty do chmury (Supabase) ===== */
 window.getCloudState=function(){return state;};
-window.adoptCloudState=function(remote){try{state=remote;const f=freshState();for(const k in f)if(state[k]===undefined)state[k]=f[k];localStorage.setItem(KEY,JSON.stringify(state));render();}catch(e){console.warn('adopt',e);}};
+window.adoptCloudState=function(remote){try{state=remote;migrateMaxLevel(state);const f=freshState();for(const k in f)if(state[k]===undefined)state[k]=f[k];localStorage.setItem(KEY,JSON.stringify(state));render();}catch(e){console.warn('adopt',e);}};
 window.resetLocalState=function(){try{state=freshState();localStorage.setItem(KEY,JSON.stringify(state));render();}catch(e){console.warn('reset',e);}};
 window.onAuthChange=function(){try{render();}catch(e){}};
 
@@ -134,9 +142,9 @@ function getDay(d){if(!state.log[d])state.log[d]={counts:{},perfect:false,flags:
 const countFor=(d,id)=>(state.log[d]?.counts[id])||0;
 const dailyGoal=()=>Math.min(3,Math.max(1,activeHabits().length));
 /* Poziomy — progi to SKUMULOWANE zebrane iskierki (state.lifetime). */
-const LEVELS=[0,120,300,550,850,1200,1650,2200,2900,3700];
+const LEVELS=[0,200,450,780,1180,1650,2200,2850,3650,4600];
 (function(){let g=LEVELS[LEVELS.length-1]-LEVELS[LEVELS.length-2],v=LEVELS[LEVELS.length-1];for(let i=LEVELS.length;i<40;i++){g=Math.round(g*1.18);v+=g;LEVELS.push(v);}})();
-function levelInfo(lt){let lvl=1;for(let i=1;i<LEVELS.length;i++){if(lt>=LEVELS[i])lvl=i+1;else break;}const base=LEVELS[lvl-1],nextAt=LEVELS[lvl]!=null?LEVELS[lvl]:base,span=Math.max(1,nextAt-base);return{level:lvl,base,nextAt,toNext:Math.max(0,nextAt-lt),pct:Math.min(100,Math.round((lt-base)/span*100))};}
+function levelInfo(lt){let lvl=1;for(let i=1;i<LEVELS.length;i++){if(lt>=LEVELS[i])lvl=i+1;else break;}const floor=(typeof state!=='undefined'&&state&&state.maxLevel)||1;if(floor>lvl)lvl=floor;const base=LEVELS[lvl-1],nextAt=LEVELS[lvl]!=null?LEVELS[lvl]:base,span=Math.max(1,nextAt-base);return{level:lvl,base,nextAt,toNext:Math.max(0,nextAt-lt),pct:Math.min(100,Math.max(0,Math.round((lt-base)/span*100)))};}
 const PLACE_LEVEL={home:1,cafe:2,park:3,spa:4};
 const PLACE_NAME={home:'Dom',park:'Park',cafe:'Kawiarnia',spa:'Spa Mili'};
 function placeLocked(id){return levelInfo(state.lifetime).level<(PLACE_LEVEL[id]||1);}
@@ -145,7 +153,7 @@ function setOwned(key){return{treats:state.treatsGiven,home:state.inventory,gard
 function setDone(key,s){const owned={treats:s.treatsGiven,home:s.inventory,garden:s.gardenHarvested}[key]||[];return owned.length>=SETS[key].items.length;}
 
 /* ===== nagrody ===== */
-function addSparks(n){const b=levelInfo(state.lifetime).level;state.sparks+=n;state.lifetime+=n;const a=levelInfo(state.lifetime).level;if(a>b)onLevelUp(b,a);}
+function addSparks(n){const b=levelInfo(state.lifetime).level;state.sparks+=n;state.lifetime+=n;const a=levelInfo(state.lifetime).level;if(a>(state.maxLevel||1))state.maxLevel=a;if(a>b)onLevelUp(b,a);}
 function onLevelUp(from,to){for(let L=from+1;L<=to;L++){addMemory('star',`Mila osiągnęła poziom ${L}!`);const un=Object.keys(PLACE_LEVEL).filter(id=>PLACE_LEVEL[id]===L);const d=(L-from-1)*1700;setTimeout(()=>{toast(`✨ Poziom ${L}!`,'star');confetti();},600+d);un.forEach(id=>{addMemory('sparkles2',`${PLACE_NAME[id]} otwiera się!`);setTimeout(()=>{toast(`${PLACE_NAME[id]} otwiera się — możesz tam teraz wejść!`,'sparkles2');confetti();},1400+d);});}}
 function addHearts(n){}
 function addMemory(ic,text){state.journal.unshift({ic,text,date:today()});if(state.journal.length>80)state.journal.pop();}
