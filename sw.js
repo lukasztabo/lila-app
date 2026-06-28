@@ -1,8 +1,9 @@
-const CACHE = 'lila-v32';
+const CACHE = 'lila-v33';
 const IMG_ASSETS = [
   './assets/lila/hero.png', './assets/lila/celebrate.png', './assets/lila/celebrate_loop.mp4', './assets/lila/sleep.png',
   './assets/lila/world.png', './assets/lila/world_asleep.png',
-  './assets/icons/icon-192.png', './assets/icons/icon-512.png', './assets/icons/apple-touch-icon.png'
+  './assets/icons/icon-192.png', './assets/icons/icon-512.png', './assets/icons/apple-touch-icon.png',
+  './assets/icons/icon-maskable-192.png', './assets/icons/icon-maskable-512.png'
 ];
 
 self.addEventListener('install', e => {
