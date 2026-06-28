@@ -125,6 +125,8 @@ function save(){localStorage.setItem(KEY,JSON.stringify(state));if(window.Cloud)
 /* ===== mosty do chmury (Supabase) ===== */
 window.getCloudState=function(){return state;};
 window.adoptCloudState=function(remote){try{state=remote;const f=freshState();for(const k in f)if(state[k]===undefined)state[k]=f[k];localStorage.setItem(KEY,JSON.stringify(state));render();}catch(e){console.warn('adopt',e);}};
+window.resetLocalState=function(){try{state=freshState();localStorage.setItem(KEY,JSON.stringify(state));render();}catch(e){console.warn('reset',e);}};
+window.onAuthChange=function(){try{render();}catch(e){}};
 
 /* ===== pochodne ===== */
 const activeHabits=()=>state.habits.filter(h=>h.active);
@@ -136,7 +138,7 @@ const LEVELS=[0,120,300,550,850,1200,1650,2200,2900,3700];
 (function(){let g=LEVELS[LEVELS.length-1]-LEVELS[LEVELS.length-2],v=LEVELS[LEVELS.length-1];for(let i=LEVELS.length;i<40;i++){g=Math.round(g*1.18);v+=g;LEVELS.push(v);}})();
 function levelInfo(lt){let lvl=1;for(let i=1;i<LEVELS.length;i++){if(lt>=LEVELS[i])lvl=i+1;else break;}const base=LEVELS[lvl-1],nextAt=LEVELS[lvl]!=null?LEVELS[lvl]:base,span=Math.max(1,nextAt-base);return{level:lvl,base,nextAt,toNext:Math.max(0,nextAt-lt),pct:Math.min(100,Math.round((lt-base)/span*100))};}
 const PLACE_LEVEL={home:1,cafe:2,park:3,spa:4};
-const PLACE_NAME={home:'Dom',park:'Park',cafe:'Kawiarnia',spa:'Spa Lili'};
+const PLACE_NAME={home:'Dom',park:'Park',cafe:'Kawiarnia',spa:'Spa Mili'};
 function placeLocked(id){return levelInfo(state.lifetime).level<(PLACE_LEVEL[id]||1);}
 function displayStreak(){const s=state.streak;if(!s.lastWin)return 0;const g=daysBetween(s.lastWin,today());if(g<=1)return s.count;if(g-1<=s.freezes)return s.count;return 0;}
 function setOwned(key){return{treats:state.treatsGiven,home:state.inventory,garden:state.gardenHarvested}[key]||[];}
@@ -144,22 +146,22 @@ function setDone(key,s){const owned={treats:s.treatsGiven,home:s.inventory,garde
 
 /* ===== nagrody ===== */
 function addSparks(n){const b=levelInfo(state.lifetime).level;state.sparks+=n;state.lifetime+=n;const a=levelInfo(state.lifetime).level;if(a>b)onLevelUp(b,a);}
-function onLevelUp(from,to){for(let L=from+1;L<=to;L++){addMemory('star',`Lila osiągnęła poziom ${L}!`);const un=Object.keys(PLACE_LEVEL).filter(id=>PLACE_LEVEL[id]===L);const d=(L-from-1)*1700;setTimeout(()=>{toast(`✨ Poziom ${L}!`,'star');confetti();},600+d);un.forEach(id=>{addMemory('sparkles2',`${PLACE_NAME[id]} otwiera się!`);setTimeout(()=>{toast(`${PLACE_NAME[id]} otwiera się — możesz tam teraz wejść!`,'sparkles2');confetti();},1400+d);});}}
+function onLevelUp(from,to){for(let L=from+1;L<=to;L++){addMemory('star',`Mila osiągnęła poziom ${L}!`);const un=Object.keys(PLACE_LEVEL).filter(id=>PLACE_LEVEL[id]===L);const d=(L-from-1)*1700;setTimeout(()=>{toast(`✨ Poziom ${L}!`,'star');confetti();},600+d);un.forEach(id=>{addMemory('sparkles2',`${PLACE_NAME[id]} otwiera się!`);setTimeout(()=>{toast(`${PLACE_NAME[id]} otwiera się — możesz tam teraz wejść!`,'sparkles2');confetti();},1400+d);});}}
 function addHearts(n){}
 function addMemory(ic,text){state.journal.unshift({ic,text,date:today()});if(state.journal.length>80)state.journal.pop();}
 
-function registerWin(d){const s=state.streak;if(s.lastWin===d)return;if(!s.lastWin)s.count=1;else{const g=daysBetween(s.lastWin,d);if(g===1)s.count++;else if(g>1){const m=g-1;if(s.freezes>=m){s.freezes-=m;s.count++;toast('Lila uratowała Twoją serię','flame');}else s.count=1;}}s.lastWin=d;const wasBest=s.best;s.count>s.best&&(s.best=s.count);if(s.best>wasBest&&STREAK_HEART_MILES.includes(s.best)){addHearts(2);addMemory('flame',`Seria ${s.best} dni!`);setTimeout(()=>toast(`Seria ${s.best} dni!`,'flame'),900);}if(s.count>0&&s.count%5===0)s.freezes=Math.min(3,s.freezes+1);}
+function registerWin(d){const s=state.streak;if(s.lastWin===d)return;if(!s.lastWin)s.count=1;else{const g=daysBetween(s.lastWin,d);if(g===1)s.count++;else if(g>1){const m=g-1;if(s.freezes>=m){s.freezes-=m;s.count++;toast('Mila uratowała Twoją serię','flame');}else s.count=1;}}s.lastWin=d;const wasBest=s.best;s.count>s.best&&(s.best=s.count);if(s.best>wasBest&&STREAK_HEART_MILES.includes(s.best)){addHearts(2);addMemory('flame',`Seria ${s.best} dni!`);setTimeout(()=>toast(`Seria ${s.best} dni!`,'flame'),900);}if(s.count>0&&s.count%5===0)s.freezes=Math.min(3,s.freezes+1);}
 function recompute(){const t=today(),day=getDay(t),act=activeHabits();const done=act.filter(h=>countFor(t,h.id)>=1).length;if(done>=dailyGoal()&&state.streak.lastWin!==t)registerWin(t);if(act.length>0&&done===act.length&&!day.perfect){day.perfect=true;addSparks(PERFECT_BONUS);addMemory('sparkle','Idealny dzień — wszystkie nawyki zrobione!');setTimeout(()=>{toast(`Idealny dzień! +${PERFECT_BONUS} iskierek`,'sparkle');confetti();},250);}save();}
-function tapHabit(h){const t=today(),day=getDay(t),cur=countFor(t,h.id);if(h.repeatable){if(cur>=6)return;day.counts[h.id]=cur+1;addSparks(h.sparks);}else{if(cur>=1){day.counts[h.id]=0;state.sparks=Math.max(0,state.sparks-h.sparks);state.lifetime=Math.max(0,state.lifetime-h.sparks);}else{day.counts[h.id]=1;addSparks(h.sparks);if(state.journal.length===0)addMemory('paw','Twój pierwszy nawyk z Lilą 🐾');}}buzz();celebratePop();const dc=activeHabits().filter(x=>countFor(t,x.id)>=1).length;if(dc>=5&&!day.flags.dance){day.flags.dance=true;maybeCelebrateVideo();}recompute();render();}
+function tapHabit(h){const t=today(),day=getDay(t),cur=countFor(t,h.id);if(h.repeatable){if(cur>=6)return;day.counts[h.id]=cur+1;addSparks(h.sparks);}else{if(cur>=1){day.counts[h.id]=0;state.sparks=Math.max(0,state.sparks-h.sparks);state.lifetime=Math.max(0,state.lifetime-h.sparks);}else{day.counts[h.id]=1;addSparks(h.sparks);if(state.journal.length===0)addMemory('paw','Twój pierwszy nawyk z Milą 🐾');}}buzz();celebratePop();const dc=activeHabits().filter(x=>countFor(t,x.id)>=1).length;if(dc>=5&&!day.flags.dance){day.flags.dance=true;maybeCelebrateVideo();}recompute();render();}
 function decHabit(h){const t=today(),day=getDay(t),cur=countFor(t,h.id);if(cur<=0)return;day.counts[h.id]=cur-1;state.sparks=Math.max(0,state.sparks-h.sparks);state.lifetime=Math.max(0,state.lifetime-h.sparks);save();render();}
 
 /* ===== kupowanie ===== */
 function spend(c){if(state.sparks<c){toast('Działaj dalej — już prawie!','sparkle');return false;}state.sparks-=c;return true;}
 function checkSet(key){if(setDone(key,state)){addHearts(3);addMemory('trophy',`Ukończona kolekcja: ${SETS[key].name}!`);setTimeout(()=>{toast(`Kolekcja „${SETS[key].name}" ukończona!`,'trophy');confetti();},500);}}
 function buyTheme(id){if(state.ownedThemes.includes(id)){state.theme=id;save();render();return;}const t=THEMES.find(x=>x.id===id);if(!spend(t.cost))return;state.ownedThemes.push(id);state.theme=id;toast(`Pokój ${t.name.toLowerCase()} odblokowany!`,'gift');confetti();save();render();}
-function buyHome(id){if(state.inventory.includes(id))return;const it=DECOR.find(d=>d.id===id);if(!spend(it.cost))return;state.inventory.push(id);addMemory('home',`Do domu Lili trafił: ${it.name.toLowerCase()}`);toast(`Dodano: ${it.name.toLowerCase()}!`,'gift');confetti();checkSet('home');save();render();}
-function giveTreat(it){if(!spend(it.cost))return;const firstTime=!state.treatsGiven.includes(it.id);if(firstTime){state.treatsGiven.push(it.id);addMemory('gift',`Podzieliłaś się z Lilą: ${it.name.toLowerCase()}`);checkSet('treats');}toast(`Lila uwielbia ${it.name.toLowerCase()}! 🤍`,'heart');confetti();save();render();}
-function unlockPlace(id,cost){if(!spend(cost))return;state.places.push(id);addMemory('sparkles2','Spa Lili odblokowane w mieście!');toast('Spa Lili odblokowane!','sparkles2');confetti();state.location=id;save();render();}
+function buyHome(id){if(state.inventory.includes(id))return;const it=DECOR.find(d=>d.id===id);if(!spend(it.cost))return;state.inventory.push(id);addMemory('home',`Do domu Mili trafił: ${it.name.toLowerCase()}`);toast(`Dodano: ${it.name.toLowerCase()}!`,'gift');confetti();checkSet('home');save();render();}
+function giveTreat(it){if(!spend(it.cost))return;const firstTime=!state.treatsGiven.includes(it.id);if(firstTime){state.treatsGiven.push(it.id);addMemory('gift',`Podzieliłaś się z Milą: ${it.name.toLowerCase()}`);checkSet('treats');}toast(`Mila uwielbia ${it.name.toLowerCase()}! 🤍`,'heart');confetti();save();render();}
+function unlockPlace(id,cost){if(!spend(cost))return;state.places.push(id);addMemory('sparkles2','Spa Mili odblokowane w mieście!');toast('Spa Mili odblokowane!','sparkles2');confetti();state.location=id;save();render();}
 
 /* ===== ogród ===== */
 function plotStage(p){if(!p)return -1;const age=daysBetween(p.planted,today());return age<=0?0:age===1?1:age===2?2:3;}
@@ -190,12 +192,51 @@ function celebratePop(){const st=document.querySelector('.lila-stage,.care-stage
 function isPerfectToday(){const a=activeHabits();return a.length>0&&a.every(h=>countFor(today(),h.id)>=1);}
 function confetti(){const c=['#F2A0BC','#C7B4EC','#8FD7BC','#F6D27A','#FBA7C6'];for(let i=0;i<26;i++){const d=document.createElement('div');d.className='confetti';d.style.background=c[i%c.length];d.style.left=(10+Math.random()*80)+'%';d.style.top='-20px';document.body.appendChild(d);d.animate([{transform:'translateY(0) rotate(0)',opacity:1},{transform:`translateY(${innerHeight+40}px) rotate(${360+Math.random()*360}deg)`,opacity:.9}],{duration:1400+Math.random()*900,easing:'cubic-bezier(.3,.6,.5,1)'}).onfinish=()=>d.remove();}}
 
-/* ===== figurka Lili ===== */
-function lilaFig(pose,height){return`<div class="lilawrap" style="height:${height}px"><img class="lila" src="assets/lila/${pose}.png" alt="Lila" style="height:${height}px"></div>`;}
+/* ===== figurka Mili ===== */
+function lilaFig(pose,height){return`<div class="lilawrap" style="height:${height}px"><img class="lila" src="assets/lila/${pose}.png" alt="Mila" style="height:${height}px"></div>`;}
 
 /* ===== render ===== */
 const app=()=>document.getElementById('app');
-function render(){const v={today:viewToday,world:viewWorld,journey:viewJourney,habits:viewHabits}[state.tab]||viewToday;app().innerHTML=v();document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.id===state.tab));initHomeScreen();initParkScreen();}
+function cloudConfigured(){return !!(window.LILA_CLOUD&&window.LILA_CLOUD.url&&window.LILA_CLOUD.anonKey);}
+function needLogin(){return cloudConfigured() && !(window.Cloud&&window.Cloud.authed);}
+let authMode=null,authErr='',authName='',authBusy=false;
+function loginScreen(){
+  if(window.Cloud&&!window.Cloud.inited){return`<div class="auth-wrap"><div class="auth-card"><div class="auth-lila">${lilaFig('hero',120)}</div><h1>Cześć! 🐶</h1><p class="auth-sub">Chwilka…</p></div></div>`;}
+  if(authMode===null)authMode=localStorage.getItem('lila.lastUser')?'login':'signup';
+  const last=localStorage.getItem('lila.lastUser')||'';const signup=authMode==='signup';
+  const nameVal=authName||(signup?'':last);
+  return`<div class="auth-wrap"><div class="auth-card">
+    <div class="auth-lila">${lilaFig('hero',120)}</div>
+    <h1>${signup?'Załóż profil':(last?`Witaj, ${esc(last)}!`:'Cześć! Kto gra?')}</h1>
+    <p class="auth-sub">${signup?'Wybierz imię i PIN — zapamiętaj je. Zalogują Cię na każdym urządzeniu.':(last?'Wpisz PIN, żeby wejść.':'Wpisz swoje imię i PIN.')}</p>
+    <label class="auth-lab">Imię</label>
+    <input id="au-name" class="auth-in" type="text" maxlength="20" placeholder="np. Lucja" value="${esc(nameVal)}" autocomplete="off" autocapitalize="words">
+    <label class="auth-lab">PIN (4–6 cyfr)</label>
+    <input id="au-pin" class="auth-in" type="password" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
+    ${authErr?`<div class="auth-err">${esc(authErr)}</div>`:''}
+    <button class="auth-go" data-act="auth-submit">${signup?'Stwórz profil':'Wejdź'}</button>
+    <button class="auth-alt" data-act="auth-mode">${signup?'Mam już profil — zaloguj się':'Pierwszy raz? Załóż profil'}</button>
+  </div></div>`;}
+async function doAuth(){
+  if(authBusy)return;
+  const nEl=document.getElementById('au-name'),pEl=document.getElementById('au-pin');
+  const n=(nEl?nEl.value:'').trim(),pin=(pEl?pEl.value:'').trim();
+  authName=n;
+  if(n.length<2){authErr='Wpisz swoje imię.';render();return;}
+  if(!/^\d{4,6}$/.test(pin)){authErr='PIN to 4–6 cyfr.';render();return;}
+  authBusy=true;authErr='';
+  const btn=document.querySelector('.auth-go');if(btn){btn.textContent='Chwilka…';btn.disabled=true;}
+  const signup=authMode==='signup';let res;
+  if(signup){state.name=n;localStorage.setItem(KEY,JSON.stringify(state));res=await window.Cloud.signUp(n,pin);}
+  else res=await window.Cloud.signIn(n,pin);
+  authBusy=false;
+  if(res&&res.ok){localStorage.setItem('lila.lastUser',n);authName='';authErr='';render();}
+  else{authErr=(res&&res.msg)||'Nie udało się.';render();}
+}
+function render(){
+  if(needLogin()){document.body.classList.add('auth-mode');app().innerHTML=loginScreen();return;}
+  document.body.classList.remove('auth-mode');
+  const v={today:viewToday,world:viewWorld,journey:viewJourney,habits:viewHabits}[state.tab]||viewToday;app().innerHTML=v();document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.id===state.tab));initHomeScreen();initParkScreen();}
 function header(){return`<div class="topbar">
     <div class="greet"><div class="hi">Cześć</div><div class="nm">${esc(state.name)}</div></div>
     <div class="chips"><div class="chip flame">${icon('flame')}${displayStreak()}</div><div class="chip spark">${icon('sparkle')}${state.sparks}</div></div></div>`;}
@@ -214,12 +255,12 @@ function viewToday(){const li=levelInfo(state.lifetime),act=activeHabits();
   const rows=act.map(h=>{const c=countFor(today(),h.id),t=TINT[h.color]||TINT.pink,isDone=c>=1;
     const right=h.repeatable?`<div class="rep"><button data-act="dec" data-id="${h.id}" ${c<=0?'style="opacity:.35"':''}>−</button><span class="cnt">×${c}</span><button data-act="tap" data-id="${h.id}">+</button></div>`:`<div class="check">${icon('check')}</div>`;
     return`<div class="habit ${isDone?'done':''}" ${h.repeatable?'':`data-act="tap" data-id="${h.id}"`}><div class="ic" style="background:${t.bg};color:${t.fg}">${icon(h.icon)}</div><div class="tx"><b>${esc(h.name)}</b><span>${esc(h.sub)}</span></div><div class="val">${icon('sparkle')}${h.sparks}</div>${right}</div>`;}).join('');
-  const banner=perfect?`<div class="banner perfect">${icon('sparkle')}<div>Idealny dzień — wszystko zrobione!<small>Lila jest z Ciebie taka dumna</small></div></div>`:'';
+  const banner=perfect?`<div class="banner perfect">${icon('sparkle')}<div>Idealny dzień — wszystko zrobione!<small>Mila jest z Ciebie taka dumna</small></div></div>`:'';
   return header()+`
     <div class="lila-card">
       <div class="speech">${esc(note)}</div>
       <div class="lila-stage">${lilaFig(pose,196)}</div>
-      <div class="lila-name"><b>Lila</b><span class="lvl">Poziom ${li.level}</span><div class="xpbar"><i style="width:${li.pct}%"></i></div></div>
+      <div class="lila-name"><b>Mila</b><span class="lvl">Poziom ${li.level}</span><div class="xpbar"><i style="width:${li.pct}%"></i></div></div>
     </div>
     ${levelBar()}
     <div class="sec"><h2>Dzisiaj</h2><span class="meta">${done} z ${act.length} zrobione</span></div>
@@ -242,10 +283,10 @@ function worldMap(){const li=levelInfo(state.lifetime);
   const nextUnlock=Object.keys(PLACE_LEVEL).filter(id=>PLACE_LEVEL[id]===li.level+1).map(id=>PLACE_NAME[id])[0];
   const npId=Object.keys(PLACE_LEVEL).filter(id=>placeLocked(id)).sort((a,b)=>PLACE_LEVEL[a]-PLACE_LEVEL[b])[0]||'spa';
   const npOpen=!placeLocked(npId);
-  const NP_DESC={cafe:'Herbatka i chwila spokoju z Olive',park:'Twój park do urządzania',spa:'Dzień relaksu dla Lili'};
-  return header()+`<div class="sec"><h2>Miasteczko Lili</h2><span class="meta">dotknij miejsca, by wejść</span></div>
+  const NP_DESC={cafe:'Herbatka i chwila spokoju z Olive',park:'Twój park do urządzania',spa:'Dzień relaksu dla Mili'};
+  return header()+`<div class="sec"><h2>Miasteczko Mili</h2><span class="meta">dotknij miejsca, by wejść</span></div>
     <div class="worldwrap"><div class="worldmap">
-      <img class="town-map" src="assets/lila/world.png" alt="Miasteczko Lili">
+      <img class="town-map" src="assets/lila/world.png" alt="Miasteczko Mili">
       ${spot('home','Dom','left:36%;top:18%;width:30%;height:34%')}
       ${spot('cafe','Kawiarnia','left:60%;top:36%;width:31%;height:26%')}
       ${spot('park','Park','left:10%;top:60%;width:35%;height:24%')}
@@ -308,7 +349,7 @@ function startBreath(durSec){
 }
 function clearBreath(){clearTimeout(breathT);clearTimeout(window._breathEnd);const ov=document.getElementById('breath-overlay');if(ov)ov.classList.remove('show');}
 function stopBreath(){clearBreath();}
-function finishBreath(){clearBreath();state.calmLog.unshift({date:today(),sec:breathDur});if(state.calmLog.length>200)state.calmLog.length=200;const first=state.cafe.lastCalm!==today();addMemory('sparkles2','Chwila spokoju z Olive — taki oddech 🤍');if(first){state.cafe.lastCalm=today();addHearts(1);confetti();toast('Pięknie. Lila i Olive są takie spokojne 🤍','sparkles2');}else toast('Pięknie 🤍','sparkles2');save();render();}
+function finishBreath(){clearBreath();state.calmLog.unshift({date:today(),sec:breathDur});if(state.calmLog.length>200)state.calmLog.length=200;const first=state.cafe.lastCalm!==today();addMemory('sparkles2','Chwila spokoju z Olive — taki oddech 🤍');if(first){state.cafe.lastCalm=today();addHearts(1);confetti();toast('Pięknie. Mila i Olive są takie spokojne 🤍','sparkles2');}else toast('Pięknie 🤍','sparkles2');save();render();}
 /* — wdzięczność — */
 function openGratitude(){const scrim=document.getElementById('scrim');scrim.innerHTML=`<div class="sheet"><h3>Chwila wdzięczności 🌿</h3><p class="note" style="margin:0 0 10px">Olive pyta: co dziś było miłe? Wpisz 1–3 rzeczy.</p><div class="field"><input id="g1" maxlength="60" placeholder="np. spacer w słońcu"></div><div class="field"><input id="g2" maxlength="60" placeholder="coś jeszcze? (opcjonalnie)"></div><div class="field"><input id="g3" maxlength="60" placeholder="i jeszcze? (opcjonalnie)"></div><div class="row"><button class="cancel" data-act="closesheet">Anuluj</button><button class="save" data-act="savegratitude">Zapisz</button></div></div>`;scrim.classList.add('show');}
 function saveGratitude(){const vals=['g1','g2','g3'].map(id=>document.getElementById(id).value.trim()).filter(Boolean);if(!vals.length){closeSheet();return;}vals.forEach(v=>{state.gratitudeLog.unshift({date:today(),text:v});addMemory('leaf',`Wdzięczność: ${v}`);});if(state.gratitudeLog.length>200)state.gratitudeLog.length=200;const first=state.cafe.lastCalm!==today();if(first){state.cafe.lastCalm=today();addHearts(1);}closeSheet();toast('Olive uśmiecha się ciepło 🤍','heart');confetti();save();render();}
@@ -318,11 +359,11 @@ function openMood(){const scrim=document.getElementById('scrim');const btns=MOOD
 function pickMood(id){const m=MOODS.find(x=>x[0]===id);state.moodLog.unshift({date:today(),mood:id});if(state.moodLog.length>120)state.moodLog.pop();const resp={great:'Cudownie 🤍 Cieszę się razem z Tobą.',good:'To miło słyszeć 🤍',meh:'Dziękuję, że powiedziałaś. Tak też bywa.',low:'Dziękuję, że mi zaufałaś. Jestem tu z Tobą 🤍',tired:'Odpocznij, na ile możesz. Herbatka czeka 🤍'}[id];addMemory('heart',`Powiedziałaś Olive: czuję się ${m[2]}`);closeSheet();toast(resp,'heart');save();render();}
 /* — przepis — */
 function showRecipe(){const rc=todayRecipe();if(!rc)return;toast(`${rc.ic} ${rc.name} — ${rc.line}`,'sparkles2');confetti();}
-/* ===== Dom Lili — urządzanie ===== */
+/* ===== Dom Mili — urządzanie ===== */
 const FURN_LIST=[
   {id:'rug',name:'Dywan',cost:20,shadow:'none',defH:0.16},
   {id:'bed',name:'Łóżko',cost:55,shadow:'floor',defH:0.26},
-  {id:'dog_bed',name:'Legowisko Lili',cost:30,shadow:'floor',defH:0.12},
+  {id:'dog_bed',name:'Legowisko Mili',cost:30,shadow:'floor',defH:0.12},
   {id:'armchair',name:'Fotel',cost:50,shadow:'floor',defH:0.23},
   {id:'cushion',name:'Poduszka',cost:15,shadow:'none',defH:0.10},
   {id:'shelf',name:'Półka',cost:45,shadow:'floor',defH:0.24},
@@ -344,7 +385,7 @@ const FURN_LIST=[
 const FURN=Object.fromEntries(FURN_LIST.map(f=>[f.id,f]));
 function homeTopZ(){const L=state.home.layout;let m=0;for(const k in L)m=Math.max(m,L[k].z||0);return m;}
 function homePlace(id){const f=FURN[id];if(!f)return;state.home.layout[id]={x:0.5,y:f.wall?0.30:0.62,h:f.defH,z:homeTopZ()+1,fx:false,rot:0};state.home.sel=id;}
-function homeBuy(id){const f=FURN[id];if(!f)return;if(state.home.owned.includes(id)){homePlace(id);save();render();return;}if(!spend(f.cost))return;state.home.owned.push(id);homePlace(id);addMemory('home',`Do domu Lili trafił/a: ${f.name.toLowerCase()}`);toast(`Kupiono: ${f.name.toLowerCase()}! Przeciągnij gdzie chcesz`,'gift');buzz();confetti();save();render();}
+function homeBuy(id){const f=FURN[id];if(!f)return;if(state.home.owned.includes(id)){homePlace(id);save();render();return;}if(!spend(f.cost))return;state.home.owned.push(id);homePlace(id);addMemory('home',`Do domu Mili trafił/a: ${f.name.toLowerCase()}`);toast(`Kupiono: ${f.name.toLowerCase()}! Przeciągnij gdzie chcesz`,'gift');buzz();confetti();save();render();}
 function homeRemove(){const id=state.home.sel;if(!id)return;delete state.home.layout[id];state.home.sel=null;save();render();}
 function homeSelOp(fn){const id=state.home.sel,p=id&&state.home.layout[id];if(!p)return;fn(p);save();render();}
 function worldHome(){const H=state.home,L=H.layout;
@@ -380,7 +421,7 @@ function worldHome(){const H=state.home,L=H.layout;
       <div class="dlab">Sklep — kup za iskierki</div>
       <div class="drow">${shop.map(f=>card(f,'home-buy',icon('sparkle')+' '+f.cost)).join('')||'<small style="color:#9a8a7a;padding:8px">Masz już wszystko 🎉</small>'}</div>
     </div>`;}
-  return locHeader('Dom Lili')+`<div class="dtop">${editBtn}</div>
+  return locHeader('Dom Mili')+`<div class="dtop">${editBtn}</div>
     <div class="droom-wrap">${room}</div>${toolbar}${drawer}
     ${H.edit?'':`<div class="hintline">${icon('home')} Dotknij „Urządzaj", by przesuwać meble i kupować nowe</div>`}<div style="height:8px"></div>`;}
 function initHomeScreen(){
@@ -431,7 +472,7 @@ function worldPark(){const P=state.park,walk=state.habits.find(h=>h.id==='walk')
     return`<img class="pobj ${sel?'sel':''}" data-uid="${uid}" src="assets/park/${o.prop}.png" draggable="false" style="left:${pos.x}cqw;top:${pos.y}cqw;height:${o.h*100}cqw;z-index:${100+Math.round((o.gx+o.gy)*10)};transform:translate(-50%,-100%) rotate(${o.rot||0}deg) scaleX(${o.fx?-1:1});filter:drop-shadow(2px 6px 4px rgba(50,40,48,.30))">`;}).join('');
   const grid=`<div class="pgrid ${P.edit?'editing':''}" id="pgrid">${tiles}${objs}</div>`;
   const editBtn=`<button class="editbtn ${P.edit?'on':''}" data-act="park-edit">${icon(P.edit?'check':'pencil')} ${P.edit?'Gotowe':'Urządzaj'}</button>`;
-  const walkBtn=`<button class="walkbtn" data-act="walk">${icon('walk')} Zabierz Lilę na spacer <span>+${walk?walk.sparks:12} ✦</span></button>`;
+  const walkBtn=`<button class="walkbtn" data-act="walk">${icon('walk')} Zabierz Milę na spacer <span>+${walk?walk.sparks:12} ✦</span></button>`;
   let toolbar='';
   if(P.edit){const has=P.sel&&P.objects[P.sel];
     toolbar=`<div class="dtools ${has?'':'dim'}">
@@ -465,15 +506,15 @@ function initParkScreen(){
   grid.addEventListener('pointerup',()=>{if(painting){painting=false;save();}});
 }
 function spaScreen(){const day=getDay(today());const spaDone=day.flags.spa;
-  return locHeader('Spa Lili')+`<div class="room-wrap"><div class="room care-stage"><div style="position:absolute;inset:0;background:linear-gradient(180deg,#E3F1FB,#E9E4F7)"></div><div class="floor" style="background:#D4E6F2"></div><div class="roomlila">${lilaFig(spaDone?'sleep':'hero',160)}</div></div></div>
-    <button class="walkbtn" style="background:#9C86D6" data-act="spaday" ${spaDone?'disabled':''}>${icon('sparkles2')} ${spaDone?'Lila odpoczywa dziś cudownie 🤍':'Zafunduj Lili dzień relaksu'} ${spaDone?'':' <span>+1 ♥</span>'}</button>
-    <p class="note">Spa to wyjątkowe miejsce — wpadnij na chwilę relaksu z Lilą.</p><div style="height:8px"></div>`;}
+  return locHeader('Spa Mili')+`<div class="room-wrap"><div class="room care-stage"><div style="position:absolute;inset:0;background:linear-gradient(180deg,#E3F1FB,#E9E4F7)"></div><div class="floor" style="background:#D4E6F2"></div><div class="roomlila">${lilaFig(spaDone?'sleep':'hero',160)}</div></div></div>
+    <button class="walkbtn" style="background:#9C86D6" data-act="spaday" ${spaDone?'disabled':''}>${icon('sparkles2')} ${spaDone?'Mila odpoczywa dziś cudownie 🤍':'Zafunduj Mili dzień relaksu'} ${spaDone?'':' <span>+1 ♥</span>'}</button>
+    <p class="note">Spa to wyjątkowe miejsce — wpadnij na chwilę relaksu z Milą.</p><div style="height:8px"></div>`;}
 
 /* ----- Podróż ----- */
 function viewJourney(){const names=['N','Pn','Wt','Śr','Cz','Pt','So'];let cells='';
   for(let i=6;i>=0;i--){const d=shiftDay(today(),-i),day=state.log[d];const act=activeHabits().length;const score=day?Object.values(day.counts).filter(n=>n>=1).length:0;const win=day&&score>=Math.min(3,Math.max(1,act));const dt=new Date(d+'T00:00:00');cells+=`<div class="d"><small>${names[dt.getDay()]}</small><div class="dot ${win?'win':''} ${i===0?'today':''}">${win?icon('check'):dt.getDate()}</div></div>`;}
   const li=levelInfo(state.lifetime);
-  const mems=state.journal.length?state.journal.slice(0,18).map(m=>`<div class="mem"><div class="mem-ic">${icon(m.ic)}</div><div class="mem-tx"><b>${esc(m.text)}</b><small>${relDay(m.date)}</small></div></div>`).join(''):`<p class="note">Twoje wspomnienia z Lilą pojawią się tutaj 🤍</p>`;
+  const mems=state.journal.length?state.journal.slice(0,18).map(m=>`<div class="mem"><div class="mem-ic">${icon(m.ic)}</div><div class="mem-tx"><b>${esc(m.text)}</b><small>${relDay(m.date)}</small></div></div>`).join(''):`<p class="note">Twoje wspomnienia z Milą pojawią się tutaj 🤍</p>`;
   const badges=BADGES.map(b=>{const got=b.test(state),t=TINT[b.color];return`<div class="badge ${got?'':'locked'}"><div class="em" style="background:${got?t.bg:'#EFE5DE'};color:${got?t.fg:'#B7A6AE'}">${icon(got?b.icon:'lock')}</div><small>${b.name}</small></div>`;}).join('');
   const moodEmoji={great:'😊',good:'🙂',meh:'😐',low:'😟',tired:'😴'};
   let moodCells='';for(let i=6;i>=0;i--){const d=shiftDay(today(),-i),m=state.moodLog.find(x=>x.date===d),dt=new Date(d+'T00:00:00');moodCells+=`<div class="d"><small>${names[dt.getDay()]}</small><div class="mface">${m?moodEmoji[m.mood]:'·'}</div></div>`;}
@@ -482,10 +523,12 @@ function viewJourney(){const names=['N','Pn','Wt','Śr','Cz','Pt','So'];let cell
     <div class="stats" style="grid-template-columns:1fr 1fr"><div class="stat"><div class="n">${state.calmLog.length}</div><div class="l">Chwile spokoju 🫖</div></div><div class="stat"><div class="n">${state.gratitudeLog.length}</div><div class="l">Wdzięczności 🌿</div></div></div>
     <div class="gwrap">${grats}</div>`;
   return header()+`<div class="sec"><h2>Ten tydzień</h2></div><div class="cal">${cells}</div>
-    <div class="stats"><div class="stat"><div class="n">${displayStreak()}</div><div class="l">Seria dni${state.streak.freezes?` · ${state.streak.freezes} ❄`:''}</div></div><div class="stat"><div class="n">${state.lifetime}</div><div class="l">Zdobyte iskierki</div></div><div class="stat"><div class="n">${levelInfo(state.lifetime).level}</div><div class="l">Poziom Lili</div></div><div class="stat"><div class="n">${state.streak.best||0}</div><div class="l">Najlepsza seria</div></div></div>
+    <div class="stats"><div class="stat"><div class="n">${displayStreak()}</div><div class="l">Seria dni${state.streak.freezes?` · ${state.streak.freezes} ❄`:''}</div></div><div class="stat"><div class="n">${state.lifetime}</div><div class="l">Zdobyte iskierki</div></div><div class="stat"><div class="n">${levelInfo(state.lifetime).level}</div><div class="l">Poziom Mili</div></div><div class="stat"><div class="n">${state.streak.best||0}</div><div class="l">Najlepsza seria</div></div></div>
     <div class="sec"><h2>Twój spokój</h2><span class="meta">z Olive 🦌</span></div>${wellbeing}
     <div class="sec"><h2>Wspomnienia</h2><span class="meta">${icon('book')}</span></div><div class="memwrap">${mems}</div>
-    <div class="sec"><h2>Odznaki</h2><span class="meta">Poziom ${li.level}</span></div><div class="badges">${badges}</div><div style="height:8px"></div>`;}
+    <div class="sec"><h2>Odznaki</h2><span class="meta">Poziom ${li.level}</span></div><div class="badges">${badges}</div>
+    ${(cloudConfigured()&&window.Cloud&&window.Cloud.authed)?`<div class="profile-row"><div class="pr-tx"><b>Profil: ${esc(state.name||'gracz')}</b><small>Twój postęp zapisuje się w chmurze ✦</small></div><button class="pr-out" data-act="logout">Zmień profil</button></div>`:''}
+    <div style="height:8px"></div>`;}
 
 /* ----- Nawyki ----- */
 function viewHabits(){const rows=state.habits.map(h=>{const t=TINT[h.color]||TINT.pink;return`<div class="erow ${h.active?'':'off'}"><div class="ic" style="width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:${t.bg};color:${t.fg}">${icon(h.icon)}</div><div class="tx" ${h.builtin?'':`data-act="edit" data-id="${h.id}"`}><b>${esc(h.name)} ${h.builtin?'':icon('pencil','style="width:13px;height:13px;vertical-align:-1px;opacity:.5"')}</b><span>${esc(h.sub)} · ${h.sparks} iskierek${h.repeatable?' · wielokrotny':''}</span></div><div class="toggle ${h.active?'on':''}" data-act="toggle" data-id="${h.id}"><i></i></div></div>`;}).join('');
@@ -501,6 +544,9 @@ function delHabit(id){state.habits=state.habits.filter(h=>h.id!==id);closeSheet(
 
 /* ===== zdarzenia ===== */
 function handle(a,id){switch(a){
+  case'auth-submit':doAuth();break;
+  case'auth-mode':authMode=(authMode==='signup'?'login':'signup');authErr='';authName='';render();break;
+  case'logout':if(window.Cloud&&window.Cloud.signOut)window.Cloud.signOut();break;
   case'nav':state.tab=id;if(id==='world')state.location='map';render();scrollTo(0,0);break;
   case'goto':{if(placeLocked(id)){toast(`Odblokuje się na poziomie ${PLACE_LEVEL[id]}`,'lock');break;}state.location=id;render();scrollTo(0,0);break;}
   case'backmap':state.location='map';render();scrollTo(0,0);break;
@@ -536,7 +582,7 @@ function handle(a,id){switch(a){
   case'buytheme':buyTheme(id);break;
   case'buyhome':buyHome(id);break;
   case'unlockspa':unlockPlace('spa',SPA_COST);break;
-  case'spaday':{const day=getDay(today());if(day.flags.spa){toast('Lila już odpoczywa dziś 🤍','heart');break;}day.flags.spa=1;addHearts(1);addMemory('sparkles2','Dzień spa z Lilą — taki relaks!');toast('Lila relaksuje się cudownie!','sparkles2');confetti();save();render();break;}
+  case'spaday':{const day=getDay(today());if(day.flags.spa){toast('Mila już odpoczywa dziś 🤍','heart');break;}day.flags.spa=1;addHearts(1);addMemory('sparkles2','Dzień spa z Milą — taki relaks!');toast('Mila relaksuje się cudownie!','sparkles2');confetti();save();render();break;}
   case'plant':openSeedSheet(+id);break;
   case'plantpick':openSeedSheet(0);break;
   case'doplant':{const[i,s]=id.split(':');plantSeed(+i,s);break;}

@@ -1,7 +1,7 @@
 {
-  "name": "Lila — Twoja kumpela od zdrowych nawyków",
-  "short_name": "Lila",
-  "description": "Buduj zdrowe nawyki z Lilą, Twoją przytulną towarzyszką.",
+  "name": "Mila — Twoja kumpela od zdrowych nawyków",
+  "short_name": "Mila",
+  "description": "Buduj zdrowe nawyki z Milą, Twoją przytulną towarzyszką.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
