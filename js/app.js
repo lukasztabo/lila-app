@@ -276,7 +276,7 @@ function viewToday(){const li=levelInfo(state.lifetime),act=activeHabits();
   const note=LILA_NOTES[(li.level+new Date().getDay())%LILA_NOTES.length];
   const rows=act.map(h=>{const c=countFor(today(),h.id),t=TINT[h.color]||TINT.pink,isDone=c>=1;
     const right=h.repeatable?`<div class="rep"><button data-act="dec" data-id="${h.id}" ${c<=0?'style="opacity:.35"':''}>−</button><span class="cnt">×${c}</span><button data-act="tap" data-id="${h.id}">+</button></div>`:`<div class="check">${icon('check')}</div>`;
-    return`<div class="habit ${isDone?'done':''}" ${h.repeatable?'':`data-act="tap" data-id="${h.id}"`}><div class="ic" style="background:${t.bg};color:${t.fg}">${icon(h.icon)}</div><div class="tx"><b>${esc(h.name)}</b><span class="sub"><em class="sp">${icon('sparkle')}${h.sparks}</em> · ${esc(h.sub)}</span></div>${right}</div>`;}).join('');
+    return`<div class="habit ${isDone?'done':''} ${h.repeatable?'rephab':''}" ${h.repeatable?'':`data-act="tap" data-id="${h.id}"`}><div class="ic" style="background:${t.bg};color:${t.fg}">${icon(h.icon)}</div><div class="tx"><b>${esc(h.name)}</b><span class="sub"><em class="sp">${icon('sparkle')}${h.sparks}</em> · ${esc(h.sub)}</span></div>${right}</div>`;}).join('');
   const banner=perfect?`<div class="banner perfect">${icon('sparkle')}<div>Idealny dzień — wszystko zrobione!<small>Mila jest z Ciebie taka dumna</small></div></div>`:'';
   return header()+`
     <div class="lila-card">

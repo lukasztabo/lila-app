@@ -63,6 +63,8 @@ img{display:block;-webkit-user-drag:none;user-select:none}
 .habit .tx .sub .sp{color:var(--lav-deep);font-weight:800;font-style:normal;white-space:nowrap}
 .habit .tx .sub .sp svg{width:12px;height:12px;vertical-align:-2px;margin-right:1px}
 .rep{display:flex;align-items:center;gap:6px;margin-right:2px;flex-shrink:0}
+.habit.rephab{flex-wrap:wrap}
+.habit.rephab .rep{flex-basis:100%;justify-content:flex-end;margin:9px 0 0}
 .rep .cnt{font-weight:800;color:var(--mint-deep);font-size:13px;min-width:30px;text-align:center}
 .rep button{width:30px;height:30px;border-radius:10px;background:var(--mint-bg);color:var(--mint-deep);font-size:18px;font-weight:800;line-height:1}
 .check{width:30px;height:30px;border-radius:50%;border:2.5px solid #E4D3DE;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s}
