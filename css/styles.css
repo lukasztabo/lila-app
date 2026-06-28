@@ -58,11 +58,11 @@ img{display:block;-webkit-user-drag:none;user-select:none}
 .habit .ic{width:40px;height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .habit .ic svg{width:22px;height:22px}
 .habit .tx{flex:1;min-width:0}
-.habit .tx b{font-size:15.5px;font-weight:800;display:block}
-.habit .tx span{font-size:12.5px;color:var(--ink-soft);font-weight:700}
-.habit .val{display:flex;align-items:center;gap:3px;color:var(--lav-deep);font-weight:800;font-size:13px;margin-right:2px}
-.habit .val svg{width:14px;height:14px}
-.rep{display:flex;align-items:center;gap:6px;margin-right:4px}
+.habit .tx b{font-size:15.5px;font-weight:800;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.habit .tx .sub{font-size:12.5px;color:var(--ink-soft);font-weight:700;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.habit .tx .sub .sp{color:var(--lav-deep);font-weight:800;font-style:normal;white-space:nowrap}
+.habit .tx .sub .sp svg{width:12px;height:12px;vertical-align:-2px;margin-right:1px}
+.rep{display:flex;align-items:center;gap:6px;margin-right:2px;flex-shrink:0}
 .rep .cnt{font-weight:800;color:var(--mint-deep);font-size:13px;min-width:30px;text-align:center}
 .rep button{width:30px;height:30px;border-radius:10px;background:var(--mint-bg);color:var(--mint-deep);font-size:18px;font-weight:800;line-height:1}
 .check{width:30px;height:30px;border-radius:50%;border:2.5px solid #E4D3DE;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s}
@@ -160,6 +160,14 @@ img{display:block;-webkit-user-drag:none;user-select:none}
 .sheet .row button{flex:1;padding:14px;border-radius:14px;font-weight:800;font-size:15px}
 .sheet .save{background:var(--pink);color:#fff}
 .sheet .cancel{background:#fff;border:1.5px solid var(--line);color:var(--ink-soft)}
+.hinfo-i{font-size:13px;color:var(--lav-deep);opacity:.75;vertical-align:1px;margin-left:2px}
+.hinfo-head{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.hinfo-head .ic{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.hinfo-head .ic svg{width:24px;height:24px}
+.hinfo-head h3{margin:0}
+.hinfo-body{font-size:15px;line-height:1.55;color:var(--ink);margin:2px 2px 14px}
+.hinfo-meta{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:var(--lav-deep);background:var(--lav-bg);padding:9px 13px;border-radius:13px;margin-bottom:16px}
+.hinfo-meta svg{width:15px;height:15px;flex:0 0 auto}
 .hide{display:none!important}
 .confetti{position:fixed;width:11px;height:11px;z-index:95;pointer-events:none;border-radius:2px}
 

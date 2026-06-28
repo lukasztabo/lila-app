@@ -45,6 +45,20 @@ const PRESET_HABITS=[
   {id:'sleep',name:'Spokojna noc',sub:'Sen o czasie',icon:'moon',color:'lav',sparks:10,repeatable:false,active:false,builtin:true},
   {id:'calm',name:'Chwila spokoju',sub:'2 minuty oddechu',icon:'heart',color:'pink',sparks:8,repeatable:false,active:false,builtin:true}
 ];
+/* Szczegółowe opisy nawyków — żeby było jasne, co dokładnie się liczy. Body-neutral, ciepło, bez zakazów. */
+const HABIT_INFO={
+  walk:'Krótki spacer po jedzeniu — wystarczy 5–10 minut. Może być po obiedzie dookoła osiedla, z psem, do sklepu albo po schodach zamiast windy. To nawyk wielokrotny: każdy taki spacerek liczy się osobno, więc możesz odhaczyć go kilka razy dziennie. Ruch po posiłku daje ciepło i lekkość. 🐾',
+  sweets:'Dzień, w którym mądrze wybierasz przy słodkim: odpuszczasz słodkie napoje i drobne słodycze, a gdy masz ochotę na coś słodkiego — sięgasz po owoc albo coś z białkiem. Nie chodzi o zakazy ani idealność — jeden mądry wybór już się liczy. To pomaga rozjaśnić „mgłę" i poczuć się lżej.',
+  veg:'Dodaj do posiłku warzywa lub owoce — im więcej kolorów, tym lepiej. Garść pomidorków, marchewka do chrupania, sałatka, owoc do śniadania — wszystko się liczy. Wystarczy raz w ciągu dnia, żeby odhaczyć. Tym podlewasz swój ogród. 🌿',
+  breakfast:'Śniadanie z odrobiną białka, żeby mieć moc na rano. Białko to np. jajko, jogurt naturalny, twaróg, serek, hummus, masło orzechowe albo wędlina. Liczy się, gdy w Twoim śniadaniu jest taki składnik. Dzięki temu energia trzyma się dłużej, bez nagłego spadku.',
+  energy:'Rusz się i baw się dobrze — cokolwiek, co Cię cieszy i wprawia w ruch: taniec do ulubionej piosenki, rower, basen, gra w piłkę, zabawa z psem. Nie musi być sportem ani treningiem — ma być po prostu fajnie. Wystarczy chwila, żeby odhaczyć. To Twoje ciepło na dziś.',
+  order:'Zacznij posiłek od warzyw i białka, a dopiero potem reszta (kasza, makaron, ziemniaki, pieczywo). Np. najpierw sałatka i kawałek kurczaka, później ryż. Taka kolejność łagodniej działa na organizm i dłużej trzyma sytość. Liczy się, gdy zrobisz tak przy jednym posiłku.',
+  strength:'Mini trening siły, jakieś 5 minut — przysiady, deska (plank), pompki o ścianę, mostek albo kilka ćwiczeń z gumą. Możesz puścić krótki filmik i powtarzać. Nie chodzi o wyczyn — o malutką iskrę siły każdego dnia.',
+  steps:'Twój dzienny cel kroków osiągnięty (z zegarka lub telefonu). Cel ustawiasz sama — np. zaczynasz od 4–6 tysięcy i z czasem podnosisz. Liczy się, gdy w danym dniu dobijesz do swojego celu.',
+  water:'Wybierz wodę zamiast słodkiego napoju — szklanka wody, woda z cytryną albo z miętą czy owocami. To nawyk wielokrotny: możesz odhaczać go kilka razy w ciągu dnia. Małe pluski, które robią różnicę. 💧',
+  sleep:'Połóż się spać o swojej porze, żeby się dobrze wyspać — np. telefon odłożony 30 minut wcześniej, światło przygaszone. Liczy się, gdy uda Ci się położyć mniej więcej o czasie. Dobry sen to gwiezdny pył dla całej reszty. 🌙',
+  calm:'2 minuty spokojnego oddechu albo wyciszenia — możesz skorzystać z oddechu w Kawiarni u Olive. Pomaga, gdy jest nerwowo albo przed snem. To chwila tylko dla Ciebie. 🤍'
+};
 
 /* ===== katalog świata ===== */
 const THEMES=[
@@ -262,7 +276,7 @@ function viewToday(){const li=levelInfo(state.lifetime),act=activeHabits();
   const note=LILA_NOTES[(li.level+new Date().getDay())%LILA_NOTES.length];
   const rows=act.map(h=>{const c=countFor(today(),h.id),t=TINT[h.color]||TINT.pink,isDone=c>=1;
     const right=h.repeatable?`<div class="rep"><button data-act="dec" data-id="${h.id}" ${c<=0?'style="opacity:.35"':''}>−</button><span class="cnt">×${c}</span><button data-act="tap" data-id="${h.id}">+</button></div>`:`<div class="check">${icon('check')}</div>`;
-    return`<div class="habit ${isDone?'done':''}" ${h.repeatable?'':`data-act="tap" data-id="${h.id}"`}><div class="ic" style="background:${t.bg};color:${t.fg}">${icon(h.icon)}</div><div class="tx"><b>${esc(h.name)}</b><span>${esc(h.sub)}</span></div><div class="val">${icon('sparkle')}${h.sparks}</div>${right}</div>`;}).join('');
+    return`<div class="habit ${isDone?'done':''}" ${h.repeatable?'':`data-act="tap" data-id="${h.id}"`}><div class="ic" style="background:${t.bg};color:${t.fg}">${icon(h.icon)}</div><div class="tx"><b>${esc(h.name)}</b><span class="sub"><em class="sp">${icon('sparkle')}${h.sparks}</em> · ${esc(h.sub)}</span></div>${right}</div>`;}).join('');
   const banner=perfect?`<div class="banner perfect">${icon('sparkle')}<div>Idealny dzień — wszystko zrobione!<small>Mila jest z Ciebie taka dumna</small></div></div>`:'';
   return header()+`
     <div class="lila-card">
@@ -539,8 +553,8 @@ function viewJourney(){const names=['N','Pn','Wt','Śr','Cz','Pt','So'];let cell
     <div style="height:8px"></div>`;}
 
 /* ----- Nawyki ----- */
-function viewHabits(){const rows=state.habits.map(h=>{const t=TINT[h.color]||TINT.pink;return`<div class="erow ${h.active?'':'off'}"><div class="ic" style="width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:${t.bg};color:${t.fg}">${icon(h.icon)}</div><div class="tx" ${h.builtin?'':`data-act="edit" data-id="${h.id}"`}><b>${esc(h.name)} ${h.builtin?'':icon('pencil','style="width:13px;height:13px;vertical-align:-1px;opacity:.5"')}</b><span>${esc(h.sub)} · ${h.sparks} iskierek${h.repeatable?' · wielokrotny':''}</span></div><div class="toggle ${h.active?'on':''}" data-act="toggle" data-id="${h.id}"><i></i></div></div>`;}).join('');
-  return header()+`<div class="sec"><h2>Twoje nawyki</h2><span class="meta">${activeHabits().length} aktywnych</span></div><p class="note">Włączaj i wyłączaj nawyki, kiedy chcesz. Możesz też dodać własne.</p><div class="edit">${rows}</div><button class="addbtn" data-act="add">${icon('plus')} Dodaj własny nawyk</button><div style="height:8px"></div>`;}
+function viewHabits(){const rows=state.habits.map(h=>{const t=TINT[h.color]||TINT.pink;return`<div class="erow ${h.active?'':'off'}"><div class="ic" style="width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:${t.bg};color:${t.fg}">${icon(h.icon)}</div><div class="tx" ${h.builtin?(HABIT_INFO[h.id]?`data-act="hinfo" data-id="${h.id}"`:''):`data-act="edit" data-id="${h.id}"`}><b>${esc(h.name)}${h.builtin?(HABIT_INFO[h.id]?' <span class="hinfo-i">ⓘ</span>':''):' '+icon('pencil','style="width:13px;height:13px;vertical-align:-1px;opacity:.5"')}</b><span>${esc(h.sub)} · ${h.sparks} iskierek${h.repeatable?' · wielokrotny':''}</span></div><div class="toggle ${h.active?'on':''}" data-act="toggle" data-id="${h.id}"><i></i></div></div>`;}).join('');
+  return header()+`<div class="sec"><h2>Twoje nawyki</h2><span class="meta">${activeHabits().length} aktywnych</span></div><p class="note">Dotknij nazwy nawyku, żeby zobaczyć dokładny opis — co dokładnie się liczy. Włączaj i wyłączaj je, kiedy chcesz, albo dodaj własne.</p><div class="edit">${rows}</div><button class="addbtn" data-act="add">${icon('plus')} Dodaj własny nawyk</button><div style="height:8px"></div>`;}
 
 /* ===== okienka ===== */
 let sheetEditId=null,sheetIcon='star';
@@ -549,6 +563,7 @@ function openSeedSheet(idx){const scrim=document.getElementById('scrim');scrim.i
 function closeSheet(){const s=document.getElementById('scrim');s.classList.remove('show');setTimeout(()=>s.innerHTML='',250);}
 function saveHabit(){const name=document.getElementById('f-name').value.trim()||'Mój nawyk';const sub=document.getElementById('f-sub').value.trim()||'Mały zdrowy sukces';if(sheetEditId){const h=state.habits.find(x=>x.id===sheetEditId);h.name=name;h.sub=sub;h.icon=sheetIcon;}else state.habits.push({id:'c'+Date.now(),name,sub,icon:sheetIcon,color:'pink',sparks:10,repeatable:false,active:true,builtin:false});closeSheet();save();render();}
 function delHabit(id){state.habits=state.habits.filter(h=>h.id!==id);closeSheet();save();render();}
+function habitInfoSheet(id){const h=state.habits.find(x=>x.id===id);if(!h)return;const t=TINT[h.color]||TINT.pink;const info=HABIT_INFO[id]||h.sub||'';const meta=`${h.sparks} iskierek za odhaczenie${h.repeatable?' · można odhaczać wielokrotnie w ciągu dnia':''}`;const scrim=document.getElementById('scrim');scrim.innerHTML=`<div class="sheet"><div class="hinfo-head"><div class="ic" style="background:${t.bg};color:${t.fg}">${icon(h.icon)}</div><h3>${esc(h.name)}</h3></div><p class="hinfo-body">${esc(info)}</p><div class="hinfo-meta">${icon('sparkle')} <span>${esc(meta)}</span></div><div class="row"><button class="save" data-act="closesheet">Rozumiem</button></div></div>`;scrim.classList.add('show');}
 
 /* ===== zdarzenia ===== */
 function handle(a,id){switch(a){
@@ -598,7 +613,7 @@ function handle(a,id){switch(a){
   case'harvest':harvest(+id);break;
   case'walk':{const w=state.habits.find(h=>h.id==='walk');if(w&&w.active)tapHabit(w);else toast('Włącz „Spacer po posiłku" w Nawykach','heart');break;}
   case'toggle':{const h=state.habits.find(x=>x.id===id);h.active=!h.active;save();render();break;}
-  case'edit':openSheet(id);break;case'add':openSheet(null);break;
+  case'edit':openSheet(id);break;case'add':openSheet(null);break;case'hinfo':habitInfoSheet(id);break;
   case'picon':sheetIcon=id;document.querySelectorAll('#f-icons button').forEach(b=>b.classList.toggle('sel',b.dataset.id===id));break;
   case'savehabit':saveHabit();break;case'delhabit':delHabit(id);break;case'closesheet':closeSheet();break;
 }}
