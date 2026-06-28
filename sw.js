@@ -1,4 +1,4 @@
-const CACHE = 'lila-v37';
+const CACHE = 'lila-v38';
 const IMG_ASSETS = [
   './assets/lila/hero.png', './assets/lila/celebrate.png', './assets/lila/celebrate_loop.mp4', './assets/lila/sleep.png',
   './assets/lila/world.png', './assets/lila/world_asleep.png',
@@ -7,7 +7,11 @@ const IMG_ASSETS = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(IMG_ASSETS)).then(() => self.skipWaiting()));
+  // NIE wołamy skipWaiting() — nowy worker czeka jako "waiting", aż user kliknie „Odśwież"
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(IMG_ASSETS)));
+});
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 self.addEventListener('activate', e => {
   e.waitUntil(

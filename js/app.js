@@ -623,6 +623,8 @@ function handle(a,id){switch(a){
   case'edit':openSheet(id);break;case'add':openSheet(null);break;case'hinfo':habitInfoSheet(id);break;
   case'picon':sheetIcon=id;document.querySelectorAll('#f-icons button').forEach(b=>b.classList.toggle('sel',b.dataset.id===id));break;
   case'savehabit':saveHabit();break;case'delhabit':delHabit(id);break;case'closesheet':closeSheet();break;
+  case'app-update':{const el=document.getElementById('update-bar');if(el)el.classList.remove('show');if(swWaiting){try{swWaiting.postMessage({type:'SKIP_WAITING'});}catch(_){}setTimeout(()=>{if(!swRefreshing)window.location.reload();},900);}else window.location.reload();break;}
+  case'app-update-x':{const el=document.getElementById('update-bar');if(el)el.classList.remove('show');break;}
 }}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(!t)return;handle(t.dataset.act,t.dataset.id);});
@@ -632,8 +634,19 @@ document.addEventListener('click',e=>{if(e.target.id==='scrim')closeSheet();});
 load();
 if(!localStorage.getItem(KEY))save();
 render();
+let swReg=null,swWaiting=null,swRefreshing=false;
+function showUpdateBar(worker){swWaiting=worker;const el=document.getElementById('update-bar');if(el)el.classList.add('show');}
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  navigator.serviceWorker.register('sw.js').then(reg=>{
+    swReg=reg;
+    if(reg.waiting&&navigator.serviceWorker.controller)showUpdateBar(reg.waiting); // aktualizacja czekała już przy starcie
+    reg.addEventListener('updatefound',()=>{const nw=reg.installing;if(!nw)return;
+      nw.addEventListener('statechange',()=>{if(nw.state==='installed'&&navigator.serviceWorker.controller)showUpdateBar(nw);});});
+  }).catch(()=>{});
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(swRefreshing)return;swRefreshing=true;window.location.reload();});
   navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.type==='SW_UPDATED')window.location.reload();});
+  // PWA dodana do pulpitu bywa otwarta długo — dopytuj o nową wersję przy powrocie i co 30 min
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&swReg)swReg.update().catch(()=>{});});
+  setInterval(()=>{if(swReg)swReg.update().catch(()=>{});},30*60*1000);
 }
 if(window.Cloud)window.Cloud.init();
